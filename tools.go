@@ -23,6 +23,7 @@ package tools
 // This is the currently recommended approach: https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module
 
 import (
+	_ "github.com/mailru/easyjson/easyjson"
 	_ "github.com/shuLhan/go-bindata/cmd/go-bindata"
 	_ "golang.org/x/tools/cmd/stringer"
 )

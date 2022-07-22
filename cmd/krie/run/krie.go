@@ -35,7 +35,7 @@ func krieCmd(cmd *cobra.Command, args []string) error {
 	// create a new KRIE instance
 	trace, err := krie.NewKRIE(options.KRIEOptions)
 	if err != nil {
-		return errors.Wrap(err, "couldn't create a new KRIEr")
+		return errors.Wrap(err, "couldn't create a new instance of KRIE")
 	}
 
 	if err := trace.Start(); err != nil {

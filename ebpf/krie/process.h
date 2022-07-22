@@ -8,16 +8,13 @@
 #ifndef _PROCESS_H_
 #define _PROCESS_H_
 
-#define CGROUP_MAX_LENGTH 72
-#define TASK_COMM_LEN 16
-
-struct cgroup_context {
+struct cgroup_context_t {
     u32 subsystem_id;
-    u32 state_id;
+    u32 id;
     char name[CGROUP_MAX_LENGTH];
 };
 
-struct credentials_context {
+struct credentials_context_t {
     kuid_t          uid;		/* real UID of the task */
     kgid_t          gid;		/* real GID of the task */
     kuid_t          suid;		/* saved UID of the task */
@@ -35,7 +32,7 @@ struct credentials_context {
     kernel_cap_t    cap_ambient;	/* Ambient capability set */
 };
 
-struct namespace_context {
+struct namespace_context_t {
     u32 cgroup_namespace;
     u32 ipc_namespace;
     u32 net_namespace;
@@ -46,14 +43,14 @@ struct namespace_context {
     u32 uts_namespace;
 };
 
-struct process_context {
-    struct namespace_context namespaces;
-    struct credentials_context credentials;
+struct process_context_t {
+    struct namespace_context_t namespaces;
+    struct credentials_context_t credentials;
     char comm[TASK_COMM_LEN];
-    struct cgroup_context cgroups[CGROUP_SUBSYS_COUNT];
+    struct cgroup_context_t cgroups[CGROUP_SUBSYS_COUNT + 1];
 };
 
-__attribute__((always_inline)) int fill_process_context(struct process_context *ctx) {
+__attribute__((always_inline)) int fill_process_context(struct process_context_t *ctx) {
     // fetch current task
     struct task_struct* task = (struct task_struct*)bpf_get_current_task();
 
@@ -63,9 +60,9 @@ __attribute__((always_inline)) int fill_process_context(struct process_context *
     // fetch cgroup data
     char *container_id;
     #pragma unroll
-    for (u32 i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+    for (u32 i = 0; i <= CGROUP_SUBSYS_COUNT; i++) {
         ctx->cgroups[i].subsystem_id = i;
-        BPF_CORE_READ_INTO(&ctx->cgroups[i].state_id, task, cgroups, subsys[i], id);
+        BPF_CORE_READ_INTO(&ctx->cgroups[i].id, task, cgroups, subsys[i], id);
         BPF_CORE_READ_INTO(&container_id, task, cgroups, subsys[i], cgroup, kn, name);
         bpf_probe_read_str(ctx->cgroups[i].name, sizeof(ctx->cgroups[i].name), container_id);
     }
@@ -92,7 +89,9 @@ __attribute__((always_inline)) int fill_process_context(struct process_context *
     BPF_CORE_READ_INTO(&ctx->namespaces.net_namespace, task, nsproxy, net_ns, ns.inum);
     BPF_CORE_READ_INTO(&ctx->namespaces.mnt_namespace, task, nsproxy, mnt_ns, ns.inum);
     BPF_CORE_READ_INTO(&ctx->namespaces.pid_namespace, task, nsproxy, pid_ns_for_children, ns.inum);
-    BPF_CORE_READ_INTO(&ctx->namespaces.time_namespace, task, nsproxy, time_ns, ns.inum);
+    if (bpf_core_field_exists(task->nsproxy->time_ns->ns.inum)) {
+        BPF_CORE_READ_INTO(&ctx->namespaces.time_namespace, task, nsproxy, time_ns, ns.inum);
+    }
     BPF_CORE_READ_INTO(&ctx->namespaces.user_namespace, task, cred, user_ns, ns.inum);
     BPF_CORE_READ_INTO(&ctx->namespaces.uts_namespace, task, nsproxy, uts_ns, ns.inum);
     return 0;

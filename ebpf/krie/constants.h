@@ -8,6 +8,10 @@
 #ifndef _CONSTANTS_H
 #define _CONSTANTS_H
 
+#define CGROUP_MAX_LENGTH 72
+#define TASK_COMM_LEN 16
+#define MODULE_NAME_LEN 56
+
 #define LOAD_CONSTANT(param, var) asm("%0 = " param " ll" : "=r"(var))
 
 static __attribute__((always_inline)) u64 get_raw_syscall_tracepoint_fallback() {

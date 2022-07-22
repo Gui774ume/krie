@@ -34,4 +34,15 @@ func init() {
 		"log-level",
 		"l",
 		"log level, options: panic, fatal, error, warn, info, debug or trace")
+
+	KRIE.Flags().VarP(
+		NewKRIEOptionsSanitizer(&options.KRIEOptions, "output"),
+		"output",
+		"o",
+		"JSON output file")
+
+	KRIE.Flags().Var(
+		NewKRIEOptionsSanitizer(&options.KRIEOptions, "vmlinux"),
+		"vmlinux",
+		"BTF information for the current kernel in .tar.xz format (required only if KRIE isn't able to locate it by itself)")
 }

@@ -14,20 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package krie
+package events
 
 import (
-	"github.com/sirupsen/logrus"
+	"encoding/binary"
+	"unsafe"
 )
 
-// Options contains the parameters of KRIE
-type Options struct {
-	LogLevel     logrus.Level
-	Output       string
-	VMLinux      string
-	EventHandler func(data []byte) error
+// GetHostByteOrder guesses the hosts byte order
+func GetHostByteOrder() binary.ByteOrder {
+	var i int32 = 0x01020304
+	u := unsafe.Pointer(&i)
+	pb := (*byte)(u)
+	b := *pb
+	if b == 0x04 {
+		return binary.LittleEndian
+	}
+
+	return binary.BigEndian
 }
 
-func (o Options) IsValid() error {
-	return nil
+// ByteOrder holds the hosts byte order
+var ByteOrder binary.ByteOrder
+
+func init() {
+	ByteOrder = GetHostByteOrder()
 }

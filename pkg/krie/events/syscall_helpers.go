@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package krie
+package events
 
 import (
 	"bytes"
@@ -95,9 +95,11 @@ func getCompatSyscallFnName(name string) string {
 
 // ShouldUseSyscallExitTracepoints returns true if the kernel version is old and we need to use tracepoints to handle syscall exits
 // instead of kretprobes
-func ShouldUseSyscallExitTracepoints() bool {
-	// return currentHost != nil && (currentHost.Code < kernel.Kernel4_12 || currentHost.IsRH7Kernel())
-	return true
+func ShouldUseSyscallExitTracepoints() uint64 {
+	if currentHost != nil && (currentHost.Code < kernel.Kernel4_12 || currentHost.IsRH7Kernel()) {
+		return 1
+	}
+	return 0
 }
 
 func expandKprobe(hookpoint string, syscallName string, flag int) []string {
@@ -106,7 +108,7 @@ func expandKprobe(hookpoint string, syscallName string, flag int) []string {
 		sections = append(sections, "kprobe/"+hookpoint)
 	}
 	if flag&Exit == Exit {
-		if len(syscallName) == 0 || !ShouldUseSyscallExitTracepoints() {
+		if len(syscallName) == 0 || ShouldUseSyscallExitTracepoints() == uint64(0) {
 			sections = append(sections, "kretprobe/"+hookpoint)
 		}
 	}

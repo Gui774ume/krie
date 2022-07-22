@@ -18,6 +18,8 @@ package run
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 
@@ -46,32 +48,53 @@ func NewKRIEOptionsSanitizer(options *krie.Options, field string) *KRIEOptionsSa
 	}
 }
 
-func (os *KRIEOptionsSanitizer) String() string {
-	switch os.field {
+func (kos *KRIEOptionsSanitizer) String() string {
+	switch kos.field {
 	case "log_level":
-		return fmt.Sprintf("%v", os.options.LogLevel)
+		return fmt.Sprintf("%v", kos.options.LogLevel)
+	case "output":
+		return kos.options.Output
+	case "vmlinux":
+		return kos.options.VMLinux
 	default:
 		return ""
 	}
 }
 
-func (os *KRIEOptionsSanitizer) Set(val string) error {
-	switch os.field {
+func (kos *KRIEOptionsSanitizer) Set(val string) error {
+	switch kos.field {
 	case "log_level":
 		sanitized, err := logrus.ParseLevel(val)
 		if err != nil {
 			return err
 		}
-		os.options.LogLevel = sanitized
+		kos.options.LogLevel = sanitized
+		return nil
+	case "output":
+		// create output directory
+		_ = os.MkdirAll(filepath.Dir(val), 0644)
+		kos.options.Output = val
+		return nil
+	case "vmlinux":
+		// check if the provided file exists
+		_, err := os.Stat(val)
+		if err != nil {
+			return fmt.Errorf("couldn't find vmlinux: %w", err)
+		}
+		kos.options.VMLinux = val
 		return nil
 	default:
 		return nil
 	}
 }
 
-func (uos *KRIEOptionsSanitizer) Type() string {
-	switch uos.field {
+func (kos *KRIEOptionsSanitizer) Type() string {
+	switch kos.field {
 	case "log_level":
+		return "string"
+	case "output":
+		return "string"
+	case "vmlinux":
 		return "string"
 	default:
 		return ""

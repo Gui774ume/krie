@@ -13,8 +13,13 @@ struct syscall_cache_t {
 
     union {
         struct {
-            u64 abc;
-        } mkdir;
+            char name[MODULE_NAME_LEN];
+            u32 loaded_from_memory;
+        } init_module;
+
+        struct {
+            char *name;
+        } delete_module;
     };
 };
 

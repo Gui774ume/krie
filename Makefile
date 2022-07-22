@@ -2,7 +2,7 @@ all: build-ebpf build-ebpf-syscall-wrapper build install
 
 build-ebpf:
 	mkdir -p ebpf/bin
-	clang -D__KERNEL__ -D__ASM_SYSREG_H \
+	clang-14 -D__KERNEL__ -DCONFIG_64BIT -D__ASM_SYSREG_H -D__x86_64__ -D__BPF_TRACING__ -DKBUILD_MODNAME=\"krie\" \
 		-Wno-unused-value \
 		-Wno-pointer-sign \
 		-Wno-compare-distinct-pointer-types \
@@ -15,13 +15,13 @@ build-ebpf:
 		-I/lib/modules/$$(uname -r)/build/arch/x86/include \
 		-I/lib/modules/$$(uname -r)/build/arch/x86/include/uapi \
 		-I/lib/modules/$$(uname -r)/build/arch/x86/include/generated \
-		-g -c -O2 -emit-llvm \
+		-c -O2 -g -target bpf \
 		ebpf/main.c \
-		-o - | llc -march=bpf -filetype=obj -o ebpf/bin/probe.o
+		-o ebpf/bin/probe.o
 
 build-ebpf-syscall-wrapper:
 	mkdir -p ebpf/bin
-	clang -D__KERNEL__ -D__ASM_SYSREG_H -DUSE_SYSCALL_WRAPPER=1 \
+	clang-14 -D__KERNEL__ -DCONFIG_64BIT -D__ASM_SYSREG_H -D__x86_64__ -DUSE_SYSCALL_WRAPPER=1 -D__BPF_TRACING__ -DKBUILD_MODNAME=\"krie\" \
 		-Wno-unused-value \
 		-Wno-pointer-sign \
 		-Wno-compare-distinct-pointer-types \
@@ -34,13 +34,14 @@ build-ebpf-syscall-wrapper:
 		-I/lib/modules/$$(uname -r)/build/arch/x86/include \
 		-I/lib/modules/$$(uname -r)/build/arch/x86/include/uapi \
 		-I/lib/modules/$$(uname -r)/build/arch/x86/include/generated \
-		-g -c -O2 -emit-llvm \
+		-c -O2 -g -target bpf \
 		ebpf/main.c \
-		-o - | llc -march=bpf -filetype=obj -o ebpf/bin/probe_syscall_wrapper.o
+		-o ebpf/bin/probe_syscall_wrapper.o
 
 build:
 	go run github.com/shuLhan/go-bindata/cmd/go-bindata -pkg assets -prefix "ebpf/bin" -o "pkg/assets/probe.go" "ebpf/bin/probe_syscall_wrapper.o" "ebpf/bin/probe.o"
 	mkdir -p bin/
+	go generate ./...
 	go build -o bin/ ./cmd/...
 
 run:

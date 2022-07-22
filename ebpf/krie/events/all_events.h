@@ -5,7 +5,9 @@
  * modify it under the terms of version 2 of the GNU General Public
  * License as published by the Free Software Foundation.
  */
-#ifndef _KRIE_H_
-#define _KRIE_H_
+#ifndef _ALL_EVENTS_H__
+#define _ALL_EVENTS_H__
+
+#include "kernel_module.h"
 
 #endif

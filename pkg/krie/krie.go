@@ -18,21 +18,28 @@ package krie
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	manager "github.com/DataDog/ebpf-manager"
+	"github.com/sirupsen/logrus"
+
+	"github.com/Gui774ume/krie/pkg/krie/events"
 )
 
 // KRIE is the main KRIE structure
 type KRIE struct {
-	handleEvent    func(data []byte)
+	event        *events.Event
+	handleEvent  func(data []byte) error
+	timeResolver *events.TimeResolver
+	outputFile   *os.File
+
 	options        Options
 	manager        *manager.Manager
 	managerOptions manager.Options
-	startTime      time.Time
 
-	timeResolver *TimeResolver
-	numCPU       int
+	startTime time.Time
+	numCPU    int
 }
 
 // NewKRIE creates a new KRIE instance
@@ -44,6 +51,7 @@ func NewKRIE(options Options) (*KRIE, error) {
 	}
 
 	e := &KRIE{
+		event:       events.NewEvent(),
 		options:     options,
 		handleEvent: options.EventHandler,
 	}
@@ -51,7 +59,7 @@ func NewKRIE(options Options) (*KRIE, error) {
 		e.handleEvent = e.defaultEventHandler
 	}
 
-	e.timeResolver, err = NewTimeResolver()
+	e.timeResolver, err = events.NewTimeResolver()
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +67,13 @@ func NewKRIE(options Options) (*KRIE, error) {
 	e.numCPU, err = NumCPU()
 	if err != nil {
 		return nil, err
+	}
+
+	if len(options.Output) > 0 {
+		e.outputFile, err = os.Create(options.Output)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't create output file: %w", err)
+		}
 	}
 	return e, nil
 }
@@ -77,8 +92,15 @@ func (e *KRIE) Stop() error {
 		// nothing to stop, return
 		return nil
 	}
+
 	if err := e.manager.Stop(manager.CleanAll); err != nil {
-		return fmt.Errorf("couldn't stop manager: %w", err)
+		logrus.Errorf("couldn't stop manager: %v", err)
+	}
+
+	if e.outputFile != nil {
+		if err := e.outputFile.Close(); err != nil {
+			logrus.Errorf("couldn't close output file: %v", err)
+		}
 	}
 	return nil
 }
@@ -87,5 +109,61 @@ func (e *KRIE) pushFilters() error {
 	return nil
 }
 
-func (e *KRIE) defaultEventHandler(data []byte) {
+var eventZero events.Event
+
+func (e *KRIE) zeroEvent() *events.Event {
+	*e.event = eventZero
+	return e.event
+}
+
+func (e *KRIE) defaultEventHandler(data []byte) error {
+	event := e.zeroEvent()
+
+	// unmarshall kernel event
+	cursor, err := event.Kernel.UnmarshalBinary(data, e.timeResolver)
+	if err != nil {
+		return err
+	}
+
+	// unmarshall process context
+	read, err := event.Process.UnmarshalBinary(data[cursor:])
+	if err != nil {
+		return err
+	}
+	cursor += read
+
+	switch event.Kernel.Type {
+	case events.InitModuleEventType:
+		read, err = event.InitModule.UnmarshallBinary(data[cursor:])
+		if err != nil {
+			return err
+		}
+		cursor += read
+	case events.DeleteModuleEventType:
+		read, err = event.DeleteModule.UnmarshallBinary(data[cursor:])
+		if err != nil {
+			return err
+		}
+		cursor += read
+	default:
+		return fmt.Errorf("unknown event type: %s", event.Kernel.Type)
+	}
+
+	// write to output file
+	if e.outputFile != nil {
+		var jsonData []byte
+		jsonData, err = event.MarshalJSON()
+		if err != nil {
+			return fmt.Errorf("couldn't marshall event: %w", err)
+		}
+		jsonData = append(jsonData, "\n"...)
+		if _, err = e.outputFile.Write(jsonData); err != nil {
+			return fmt.Errorf("couldn't write event to output: %w", err)
+		}
+	}
+
+	if logrus.GetLevel() >= logrus.DebugLevel {
+		logrus.Debugf("%s", event.String())
+	}
+	return nil
 }

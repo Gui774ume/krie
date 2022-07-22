@@ -16,16 +16,12 @@ limitations under the License.
 
 //go:generate go run golang.org/x/tools/cmd/stringer -type Syscall -output syscalls_string_linux.go
 
-package krie
+package events
 
 import (
 	"strings"
 
 	"github.com/pkg/errors"
-)
-
-var (
-	ErrNotEnoughData = errors.New("not enough data")
 )
 
 // Syscall represents a syscall identifier

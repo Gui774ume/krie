@@ -11,8 +11,16 @@
 enum event_type
 {
     EVENT_ANY = 0,
-    EVENT_MKDIR,
+    EVENT_INIT_MODULE,
+    EVENT_DELETE_MODULE,
     EVENT_MAX, // has to be the last one
+};
+
+struct kernel_event_t {
+    u64 timestamp;
+    s64 retval;
+    u32 cpu;
+    u32 type;
 };
 
 struct perf_map_stats_t {
@@ -23,7 +31,6 @@ struct perf_map_stats_t {
 
 struct {
 	__uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-	__uint(max_entries, EVENT_MAX);
 } events SEC(".maps");
 
 struct {
@@ -115,7 +122,6 @@ struct {
     u64 size = sizeof(kernel_event);                                                                                   \
     u64 use_ring_buffer;                                                                                               \
     LOAD_CONSTANT("use_ring_buffer", use_ring_buffer);                                                                 \
-    int perf_ret;                                                                                                      \
     if (use_ring_buffer) {                                                                                             \
         send_event_with_size_ringbuf(ctx, event_type, kernel_event, size)                                              \
     } else {                                                                                                           \
@@ -125,7 +131,6 @@ struct {
 #define send_event_with_size(ctx, event_type, kernel_event, size)                                                      \
     u64 use_ring_buffer;                                                                                               \
     LOAD_CONSTANT("use_ring_buffer", use_ring_buffer);                                                                 \
-    int perf_ret;                                                                                                      \
     if (use_ring_buffer) {                                                                                             \
         send_event_with_size_ringbuf(ctx, event_type, kernel_event, size)                                              \
     } else {                                                                                                           \
@@ -135,7 +140,6 @@ struct {
 #define send_event_ptr(ctx, event_type, kernel_event)                                                                  \
     u64 size = sizeof(*kernel_event);                                                                                  \
     u64 use_ring_buffer;                                                                                               \
-    int perf_ret;                                                                                                      \
     LOAD_CONSTANT("use_ring_buffer", use_ring_buffer);                                                                 \
     if (use_ring_buffer) {                                                                                             \
         send_event_with_size_ptr_ringbuf(ctx, event_type, kernel_event, size)                                          \
@@ -145,7 +149,6 @@ struct {
 
 #define send_event_with_size_ptr(ctx, event_type, kernel_event, size)                                                  \
     u64 use_ring_buffer;                                                                                               \
-    int perf_ret;                                                                                                      \
     LOAD_CONSTANT("use_ring_buffer", use_ring_buffer);                                                                 \
     if (use_ring_buffer) {                                                                                             \
         send_event_with_size_ptr_ringbuf(ctx, event_type, kernel_event, size)                                          \

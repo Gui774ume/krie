@@ -14,29 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package krie
+package events
 
-import (
-	"encoding/binary"
-	"unsafe"
+import "fmt"
+
+var (
+	// ErrNotEnoughData is the error returned when the provided buffer is too small
+	ErrNotEnoughData = fmt.Errorf("not enough data")
 )
-
-// GetHostByteOrder guesses the hosts byte order
-func GetHostByteOrder() binary.ByteOrder {
-	var i int32 = 0x01020304
-	u := unsafe.Pointer(&i)
-	pb := (*byte)(u)
-	b := *pb
-	if b == 0x04 {
-		return binary.LittleEndian
-	}
-
-	return binary.BigEndian
-}
-
-// ByteOrder holds the hosts byte order
-var ByteOrder binary.ByteOrder
-
-func init() {
-	ByteOrder = GetHostByteOrder()
-}

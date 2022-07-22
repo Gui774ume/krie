@@ -19,19 +19,23 @@ package krie
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"math"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	manager "github.com/DataDog/ebpf-manager"
 	"github.com/cilium/ebpf"
+	"github.com/cilium/ebpf/btf"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
 	"github.com/Gui774ume/krie/pkg/assets"
+	"github.com/Gui774ume/krie/pkg/kernel"
+	"github.com/Gui774ume/krie/pkg/krie/events"
 )
-
-// KRIEUID is the UID used to uniquely identify kernel space programs
-const KRIEUID = "krie"
 
 func (e *KRIE) startManager() error {
 	// fetch ebpf assets
@@ -42,6 +46,11 @@ func (e *KRIE) startManager() error {
 
 	// setup a default manager
 	e.prepareManager()
+
+	// load vmlinux
+	if err = e.loadVMLinux(); err != nil {
+		return fmt.Errorf("couldn't load kernel BTF specs, please try to provide --vmlinux: %w", err)
+	}
 
 	// initialize the manager
 	if err = e.manager.InitWithOptions(asset, e.managerOptions); err != nil {
@@ -107,70 +116,118 @@ func (e *KRIE) prepareManager() {
 			Max: math.MaxUint64,
 		},
 
-		TailCallRouter: []manager.TailCallRoute{
-			{
-				ProgArrayName: "sys_exit_progs",
-				Key:           uint32(1),
-				ProbeIdentificationPair: manager.ProbeIdentificationPair{
-					EBPFSection:  "tracepoint/handle_sys_mkdir_exit",
-					EBPFFuncName: "tracepoint_handle_sys_mkdir_exit",
-				},
-			},
-		},
+		TailCallRouter: events.AllTailCallRoutes(),
 
 		ConstantEditors: []manager.ConstantEditor{
 			{
 				Name:  "raw_syscall_tracepoint_fallback",
-				Value: uint64(1),
+				Value: events.ShouldUseSyscallExitTracepoints(),
+			},
+		},
+		ActivatedProbes: events.AllProbesSelectors(),
+	}
+	e.manager = &manager.Manager{
+		Probes: events.AllProbes(),
+		PerfMaps: []*manager.PerfMap{
+			{
+				Map: manager.Map{Name: "events"},
+				PerfMapOptions: manager.PerfMapOptions{
+					PerfRingBufferSize: 8192 * os.Getpagesize(),
+					DataHandler: func(CPU int, data []byte, perfMap *manager.PerfMap, manager *manager.Manager) {
+						if err := e.handleEvent(data); err != nil {
+							logrus.Errorf("couldn't handle event: %v", err)
+						}
+					},
+				},
 			},
 		},
 	}
-	e.prepareProbes()
-	e.prepareProbeSelectors()
+}
+
+func (e *KRIE) loadVMLinux() error {
+	var btfSpec *btf.Spec
+	var err error
+
+	if len(e.options.VMLinux) > 0 {
+		f, err := createBTFReaderFromTarball(e.options.VMLinux)
+		if err != nil {
+			return err
+		}
+
+		// if a vmlinux file was provided, open it now
+		btfSpec, err = btf.LoadSpecFromReader(f)
+		if err != nil {
+			return fmt.Errorf("couldn't load %s: %w", e.options.VMLinux, err)
+		}
+	} else {
+		// try to open vmlinux from the default locations
+		btfSpec, err = btf.LoadKernelSpec()
+		if err != nil {
+			// fetch the BTF spec from btfhub
+			btfSpec, err = e.loadSpecFromBTFHub()
+			if err != nil {
+				return fmt.Errorf("couldn't load kernel BTF specs from BTFHub: %w", err)
+			}
+		}
+	}
+
+	e.managerOptions.VerifierOptions.Programs.KernelTypes = btfSpec
+	return nil
+}
+
+const (
+	// BTFHubURL is the URL to BTFHub github repository
+	BTFHubURL = "https://github.com/aquasecurity/btfhub-archive/raw/main/%s/%s/x86_64/%s.btf.tar.xz"
+)
+
+func (e *KRIE) loadSpecFromBTFHub() (*btf.Spec, error) {
+	h, err := kernel.NewHost()
+	if err != nil {
+		return nil, err
+	}
+
+	// check the local KRIE cache first
+	file := fmt.Sprintf("/tmp/%s.tar.xz", h.UnameRelease)
+	if _, err = os.Stat(file); err != nil {
+		// download the file now
+		url := fmt.Sprintf(BTFHubURL, h.OsRelease["ID"], h.OsRelease["VERSION_ID"], h.UnameRelease)
+		logrus.Infof("Downloading BTF specs from %s ...", url)
+
+		// Get the data
+		resp, err := http.Get(url)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't download BTF specs from BTFHub: %w", err)
+		}
+		defer resp.Body.Close()
+
+		// Create the file
+		out, err := os.Create(file)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't create local BTFHub cache at %s: %w", file, err)
+		}
+		defer out.Close()
+
+		// Write the body to file
+		_, err = io.Copy(out, resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't create local BTFHub cache at %s: %w", file, err)
+		}
+	}
+
+	f, err := createBTFReaderFromTarball(file)
+	if err != nil {
+		return nil, err
+	}
+
+	// if a vmlinux file was provided, open it now
+	btfSpec, err := btf.LoadSpecFromReader(f)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't load %s: %w", e.options.VMLinux, err)
+	}
+
+	return btfSpec, nil
 }
 
 func (e *KRIE) selectMaps() error {
 	return nil
-}
-
-func (e *KRIE) prepareProbes() {
-	e.manager = &manager.Manager{
-		Probes: []*manager.Probe{
-			{
-				ProbeIdentificationPair: manager.ProbeIdentificationPair{
-					UID:          KRIEUID,
-					EBPFSection:  "kprobe/vfs_mkdir",
-					EBPFFuncName: "kprobe_vfs_mkdir",
-				},
-			},
-			{
-				ProbeIdentificationPair: manager.ProbeIdentificationPair{
-					UID:          KRIEUID,
-					EBPFSection:  "tracepoint/raw_syscalls/sys_exit",
-					EBPFFuncName: "sys_exit",
-				},
-			},
-		},
-	}
-
-	e.manager.Probes = append(e.manager.Probes, ExpandSyscallProbes(&manager.Probe{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID: KRIEUID,
-		},
-		SyscallFuncName: "mkdir",
-	}, EntryAndExit)...)
-}
-
-func (e *KRIE) prepareProbeSelectors() {
-	e.managerOptions.ActivatedProbes = []manager.ProbesSelector{
-		&manager.AllOf{
-			Selectors: []manager.ProbesSelector{
-				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "tracepoint/raw_syscalls/sys_exit", EBPFFuncName: "sys_exit"}},
-				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kprobe/vfs_mkdir", EBPFFuncName: "kprobe_vfs_mkdir"}},
-				&manager.OneOf{Selectors: ExpandSyscallProbesSelector(
-					manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "mkdir"}, EntryAndExit),
-				},
-			},
-		},
-	}
 }

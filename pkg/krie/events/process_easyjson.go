@@ -60,6 +60,10 @@ func easyjson5c87105dDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 			easyjson5c87105dDecodeGithubComGui774umeKriePkgKrieEvents3(in, &out.Credentials)
 		case "comm":
 			out.Comm = string(in.String())
+		case "pid":
+			out.PID = uint32(in.Uint32())
+		case "tid":
+			out.TID = uint32(in.Uint32())
 		default:
 			in.SkipRecursive()
 		}
@@ -77,29 +81,32 @@ func easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writ
 	{
 		const prefix string = ",\"cgroups\":"
 		out.RawString(prefix[1:])
-		out.RawByte('[')
-		for v2 := range in.Cgroups {
-			if v2 > 0 {
-				out.RawByte(',')
-			}
-			easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents1(out, (in.Cgroups)[v2])
-		}
-		out.RawByte(']')
+		out.Raw((in.Cgroups).MarshalJSON())
 	}
 	{
 		const prefix string = ",\"namespace_context\":"
 		out.RawString(prefix)
-		easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents2(out, in.NamespaceContext)
+		easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents1(out, in.NamespaceContext)
 	}
 	{
 		const prefix string = ",\"credentials\":"
 		out.RawString(prefix)
-		easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents3(out, in.Credentials)
+		easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents2(out, in.Credentials)
 	}
 	{
 		const prefix string = ",\"comm\":"
 		out.RawString(prefix)
 		out.String(string(in.Comm))
+	}
+	{
+		const prefix string = ",\"pid\":"
+		out.RawString(prefix)
+		out.Uint32(uint32(in.PID))
+	}
+	{
+		const prefix string = ",\"tid\":"
+		out.RawString(prefix)
+		out.Uint32(uint32(in.TID))
 	}
 	out.RawByte('}')
 }
@@ -170,7 +177,7 @@ func easyjson5c87105dDecodeGithubComGui774umeKriePkgKrieEvents3(in *jlexer.Lexer
 		in.Consumed()
 	}
 }
-func easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents3(out *jwriter.Writer, in CredentialsContext) {
+func easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents2(out *jwriter.Writer, in CredentialsContext) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -291,7 +298,7 @@ func easyjson5c87105dDecodeGithubComGui774umeKriePkgKrieEvents2(in *jlexer.Lexer
 		in.Consumed()
 	}
 }
-func easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents2(out *jwriter.Writer, in NamespaceContext) {
+func easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents1(out *jwriter.Writer, in NamespaceContext) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -356,8 +363,6 @@ func easyjson5c87105dDecodeGithubComGui774umeKriePkgKrieEvents1(in *jlexer.Lexer
 			continue
 		}
 		switch key {
-		case "subsystem_id":
-			out.SubsystemID = CgroupSubsystemID(in.Uint32())
 		case "id":
 			out.ID = uint32(in.Uint32())
 		case "name":
@@ -372,18 +377,18 @@ func easyjson5c87105dDecodeGithubComGui774umeKriePkgKrieEvents1(in *jlexer.Lexer
 		in.Consumed()
 	}
 }
-func easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents1(out *jwriter.Writer, in CgroupContext) {
+func easyjson5c87105dEncodeGithubComGui774umeKriePkgKrieEvents3(out *jwriter.Writer, in CgroupContext) {
 	out.RawByte('{')
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"subsystem_id\":"
-		out.RawString(prefix[1:])
-		out.Raw((in.SubsystemID).MarshalJSON())
-	}
-	{
 		const prefix string = ",\"id\":"
-		out.RawString(prefix)
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
 		out.Uint32(uint32(in.ID))
 	}
 	if in.Name != "" {

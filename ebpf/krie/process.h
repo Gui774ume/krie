@@ -48,14 +48,19 @@ struct process_context_t {
     struct credentials_context_t credentials;
     char comm[TASK_COMM_LEN];
     struct cgroup_context_t cgroups[CGROUP_SUBSYS_COUNT + 1];
+    u32 pid;
+    u32 tid;
 };
 
 __attribute__((always_inline)) int fill_process_context(struct process_context_t *ctx) {
     // fetch current task
     struct task_struct* task = (struct task_struct*)bpf_get_current_task();
 
-    // fetch process comm
+    // fetch process comm and ids
     bpf_get_current_comm(ctx->comm, sizeof(ctx->comm));
+    u64 id = bpf_get_current_pid_tgid();
+    ctx->pid = id >> 32;
+    ctx->tid = id;
 
     // fetch cgroup data
     char *container_id;

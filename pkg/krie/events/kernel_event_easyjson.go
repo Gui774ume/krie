@@ -79,7 +79,7 @@ func easyjson2269c87aEncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writ
 	{
 		const prefix string = ",\"type\":"
 		out.RawString(prefix)
-		out.Uint32(uint32(in.Type))
+		out.Raw((in.Type).MarshalJSON())
 	}
 	out.RawByte('}')
 }

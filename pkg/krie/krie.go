@@ -74,6 +74,8 @@ func NewKRIE(options Options) (*KRIE, error) {
 		if err != nil {
 			return nil, fmt.Errorf("couldn't create output file: %w", err)
 		}
+
+		_ = os.Chmod(options.Output, 0644)
 	}
 	return e, nil
 }

@@ -63,6 +63,10 @@ func (t EventType) String() string {
 	}
 }
 
+func (t EventType) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", t.String())), nil
+}
+
 // AllProbesSelectors returns all the probes selectors
 func AllProbesSelectors() []manager.ProbesSelector {
 	all := []manager.ProbesSelector{

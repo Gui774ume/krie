@@ -20,6 +20,7 @@ package events
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 )
 
@@ -30,7 +31,7 @@ const (
 
 // CgroupContext is used to parse the cgroup context of an event
 type CgroupContext struct {
-	SubsystemID CgroupSubsystemID `json:"subsystem_id"`
+	SubsystemID CgroupSubsystemID `json:"-"`
 	ID          uint32            `json:"id"`
 	Name        string            `json:"name,omitempty"`
 }
@@ -115,12 +116,25 @@ func (nc *NamespaceContext) UnmarshalBinary(data []byte) (int, error) {
 	return 32, nil
 }
 
+// Cgroups is used to wrap the CgroupContext and ease serialization
+type Cgroups [CgroupSubsystemMax]CgroupContext
+
+func (c Cgroups) MarshalJSON() ([]byte, error) {
+	out := make(map[string]CgroupContext)
+	for k, v := range c {
+		out[CgroupSubsystemID(k).String()] = v
+	}
+	return json.Marshal(out)
+}
+
 // ProcessContext is used to parse the process context of an event
 type ProcessContext struct {
-	Cgroups          [CgroupSubsystemMax]CgroupContext `json:"cgroups"`
-	NamespaceContext NamespaceContext                  `json:"namespace_context"`
-	Credentials      CredentialsContext                `json:"credentials"`
-	Comm             string                            `json:"comm"`
+	Cgroups          Cgroups            `json:"cgroups"`
+	NamespaceContext NamespaceContext   `json:"namespace_context"`
+	Credentials      CredentialsContext `json:"credentials"`
+	Comm             string             `json:"comm"`
+	PID              uint32             `json:"pid"`
+	TID              uint32             `json:"tid"`
 }
 
 // UnmarshalBinary unmarshalls a binary representation of itself
@@ -153,6 +167,13 @@ func (pc *ProcessContext) UnmarshalBinary(data []byte) (int, error) {
 		}
 		cursor += read
 	}
+
+	if len(data[cursor:]) < 8 {
+		return 0, fmt.Errorf("while parsing ProcessContext.PID: got len %d, needed %d: %w", len(data[cursor:]), 8, err)
+	}
+	pc.PID = ByteOrder.Uint32(data[cursor : cursor+4])
+	pc.TID = ByteOrder.Uint32(data[cursor+4 : cursor+8])
+	cursor += 8
 
 	return cursor, nil
 }

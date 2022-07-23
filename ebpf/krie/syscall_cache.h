@@ -37,6 +37,12 @@ struct syscall_cache_t {
             u16 protocol;
             u16 prog_len;
         } bpf_filter;
+
+        struct {
+            u32 request;
+            u32 pid;
+            u64 addr;
+        } ptrace;
     };
 };
 

@@ -416,7 +416,7 @@ var (
 	}
 
 	// addressFamilyConstants are the supported network address families
-	addressFamilyConstants = map[string]uint16{
+	addressFamilyConstants = map[string]AddressFamily{
 		"AF_UNSPEC":     unix.AF_UNSPEC,
 		"AF_LOCAL":      unix.AF_LOCAL,
 		"AF_UNIX":       unix.AF_UNIX,
@@ -571,19 +571,59 @@ var (
 		"SOCK_DCCP":      unix.SOCK_DCCP,
 		"SOCK_PACKET":    unix.SOCK_PACKET,
 	}
+
+	// ptraceConstants are the supported ptrace commands for the ptrace syscall
+	ptraceConstants = map[string]PTraceRequest{
+		"PTRACE_TRACEME":    unix.PTRACE_TRACEME,
+		"PTRACE_PEEKTEXT":   unix.PTRACE_PEEKTEXT,
+		"PTRACE_PEEKDATA":   unix.PTRACE_PEEKDATA,
+		"PTRACE_PEEKUSR":    unix.PTRACE_PEEKUSR,
+		"PTRACE_POKETEXT":   unix.PTRACE_POKETEXT,
+		"PTRACE_POKEDATA":   unix.PTRACE_POKEDATA,
+		"PTRACE_POKEUSR":    unix.PTRACE_POKEUSR,
+		"PTRACE_CONT":       unix.PTRACE_CONT,
+		"PTRACE_KILL":       unix.PTRACE_KILL,
+		"PTRACE_SINGLESTEP": unix.PTRACE_SINGLESTEP,
+		"PTRACE_ATTACH":     unix.PTRACE_ATTACH,
+		"PTRACE_DETACH":     unix.PTRACE_DETACH,
+		"PTRACE_SYSCALL":    unix.PTRACE_SYSCALL,
+
+		"PTRACE_SETOPTIONS":           unix.PTRACE_SETOPTIONS,
+		"PTRACE_GETEVENTMSG":          unix.PTRACE_GETEVENTMSG,
+		"PTRACE_GETSIGINFO":           unix.PTRACE_GETSIGINFO,
+		"PTRACE_SETSIGINFO":           unix.PTRACE_SETSIGINFO,
+		"PTRACE_GETREGSET":            unix.PTRACE_GETREGSET,
+		"PTRACE_SETREGSET":            unix.PTRACE_SETREGSET,
+		"PTRACE_SEIZE":                unix.PTRACE_SEIZE,
+		"PTRACE_INTERRUPT":            unix.PTRACE_INTERRUPT,
+		"PTRACE_LISTEN":               unix.PTRACE_LISTEN,
+		"PTRACE_PEEKSIGINFO":          unix.PTRACE_PEEKSIGINFO,
+		"PTRACE_GETSIGMASK":           unix.PTRACE_GETSIGMASK,
+		"PTRACE_SETSIGMASK":           unix.PTRACE_SETSIGMASK,
+		"PTRACE_SECCOMP_GET_FILTER":   unix.PTRACE_SECCOMP_GET_FILTER,
+		"PTRACE_SECCOMP_GET_METADATA": unix.PTRACE_SECCOMP_GET_METADATA,
+		"PTRACE_GET_SYSCALL_INFO":     unix.PTRACE_GET_SYSCALL_INFO,
+	}
 )
 
 var (
-	bpfCmdStrings         = map[uint32]string{}
-	bpfFilterCmdStrings   = map[uint32]string{}
-	bpfHelperFuncStrings  = map[uint32]string{}
-	bpfMapTypeStrings     = map[uint32]string{}
-	bpfProgramTypeStrings = map[uint32]string{}
-	bpfAttachTypeStrings  = map[uint32]string{}
-	addressFamilyStrings  = map[uint16]string{}
+	bpfCmdStrings         = map[BPFCmd]string{}
+	bpfFilterCmdStrings   = map[BPFFilterCmd]string{}
+	bpfHelperFuncStrings  = map[BPFHelperFunc]string{}
+	bpfMapTypeStrings     = map[BPFMapType]string{}
+	bpfProgramTypeStrings = map[BPFProgramType]string{}
+	bpfAttachTypeStrings  = map[BPFAttachType]string{}
+	addressFamilyStrings  = map[AddressFamily]string{}
 	l3ProtocolStrings     = map[L3Protocol]string{}
 	socketTypeStrings     = map[SocketType]string{}
+	ptraceFlagsStrings    = map[PTraceRequest]string{}
 )
+
+func initPTraceConstants() {
+	for k, v := range ptraceConstants {
+		ptraceFlagsStrings[v] = k
+	}
+}
 
 func initSocketTypeStrings() {
 	for k, v := range socketTypeConstants {
@@ -605,37 +645,37 @@ func initAddressFamilyConstants() {
 
 func initBPFCmdConstants() {
 	for k, v := range BPFCmdConstants {
-		bpfCmdStrings[uint32(v)] = k
+		bpfCmdStrings[v] = k
 	}
 }
 
 func initBPFFilterCmdConstants() {
 	for k, v := range BPFFilterCmdConstants {
-		bpfFilterCmdStrings[uint32(v)] = k
+		bpfFilterCmdStrings[v] = k
 	}
 }
 
 func initBPFHelperFuncConstants() {
 	for k, v := range BPFHelperFuncConstants {
-		bpfHelperFuncStrings[uint32(v)] = k
+		bpfHelperFuncStrings[v] = k
 	}
 }
 
 func initBPFMapTypeConstants() {
 	for k, v := range BPFMapTypeConstants {
-		bpfMapTypeStrings[uint32(v)] = k
+		bpfMapTypeStrings[v] = k
 	}
 }
 
 func initBPFProgramTypeConstants() {
 	for k, v := range BPFProgramTypeConstants {
-		bpfProgramTypeStrings[uint32(v)] = k
+		bpfProgramTypeStrings[v] = k
 	}
 }
 
 func initBPFAttachTypeConstants() {
 	for k, v := range BPFAttachTypeConstants {
-		bpfAttachTypeStrings[uint32(v)] = k
+		bpfAttachTypeStrings[v] = k
 	}
 }
 
@@ -649,6 +689,7 @@ func init() {
 	initAddressFamilyConstants()
 	initL3ProtocolConstants()
 	initSocketTypeStrings()
+	initPTraceConstants()
 }
 
 func bitmaskToStringArray(bitmask int, intToStrMap map[int]string) []string {
@@ -703,6 +744,17 @@ func bitmaskU64ToStringArray(bitmask uint64, intToStrMap map[uint64]string) []st
 
 func bitmaskU64ToString(bitmask uint64, intToStrMap map[uint64]string) string {
 	return strings.Join(bitmaskU64ToStringArray(bitmask, intToStrMap), " | ")
+}
+
+// PTraceRequest represents a ptrace request value
+type PTraceRequest uint32
+
+func (f PTraceRequest) String() string {
+	return ptraceFlagsStrings[f]
+}
+
+func (f PTraceRequest) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", f.String())), nil
 }
 
 // SocketType socket typ
@@ -917,7 +969,7 @@ const (
 type AddressFamily uint16
 
 func (af AddressFamily) String() string {
-	return addressFamilyStrings[uint16(af)]
+	return addressFamilyStrings[af]
 }
 
 func (af AddressFamily) MarshalJSON() ([]byte, error) {
@@ -928,7 +980,7 @@ func (af AddressFamily) MarshalJSON() ([]byte, error) {
 type BPFCmd uint64
 
 func (cmd BPFCmd) String() string {
-	return bpfCmdStrings[uint32(cmd)]
+	return bpfCmdStrings[cmd]
 }
 
 func (cmd BPFCmd) MarshalJSON() ([]byte, error) {
@@ -1014,7 +1066,7 @@ const (
 type BPFFilterCmd uint32
 
 func (cmd BPFFilterCmd) String() string {
-	return bpfFilterCmdStrings[uint32(cmd)]
+	return bpfFilterCmdStrings[cmd]
 }
 
 func (cmd BPFFilterCmd) MarshalJSON() ([]byte, error) {
@@ -1034,7 +1086,7 @@ const (
 type BPFHelperFunc uint32
 
 func (f BPFHelperFunc) String() string {
-	return bpfHelperFuncStrings[uint32(f)]
+	return bpfHelperFuncStrings[f]
 }
 
 // BPFHelperFuncList represents a list of eBPF helpers
@@ -1391,7 +1443,7 @@ const (
 type BPFMapType uint32
 
 func (t BPFMapType) String() string {
-	return bpfMapTypeStrings[uint32(t)]
+	return bpfMapTypeStrings[t]
 }
 
 func (t BPFMapType) MarshalJSON() ([]byte, error) {
@@ -1465,7 +1517,7 @@ const (
 type BPFProgramType uint32
 
 func (t BPFProgramType) String() string {
-	return bpfProgramTypeStrings[uint32(t)]
+	return bpfProgramTypeStrings[t]
 }
 
 func (t BPFProgramType) MarshalJSON() ([]byte, error) {
@@ -1541,7 +1593,7 @@ const (
 type BPFAttachType uint32
 
 func (t BPFAttachType) String() string {
-	return bpfAttachTypeStrings[uint32(t)]
+	return bpfAttachTypeStrings[t]
 }
 
 func (t BPFAttachType) MarshalJSON() ([]byte, error) {
@@ -1628,3 +1680,10 @@ const (
 	// BpfSkSkbVerdict attach type
 	BpfSkSkbVerdict
 )
+
+// MemoryPointer is used to serialize memory addresses
+type MemoryPointer uint64
+
+func (mp MemoryPointer) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("0x%x", mp)), nil
+}

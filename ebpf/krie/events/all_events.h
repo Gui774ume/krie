@@ -11,5 +11,6 @@
 #include "kernel_module.h"
 #include "bpf.h"
 #include "setsockopt.h"
+#include "ptrace.h"
 
 #endif

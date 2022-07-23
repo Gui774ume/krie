@@ -32,6 +32,7 @@ func easyjson692db02bDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 	out.DeleteModuleEventSerializer = new(DeleteModuleEventSerializer)
 	out.BPFEventSerializer = new(BPFEventSerializer)
 	out.BPFFilterEventSerializer = new(BPFFilterEventSerializer)
+	out.PtraceEventSerializer = new(PtraceEventSerializer)
 	in.Delim('{')
 	for !in.IsDelim('}') {
 		key := in.UnsafeFieldName(false)
@@ -102,6 +103,16 @@ func easyjson692db02bDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 				}
 				(*out.BPFFilterEventSerializer).UnmarshalEasyJSON(in)
 			}
+		case "ptrace":
+			if in.IsNull() {
+				in.Skip()
+				out.PtraceEventSerializer = nil
+			} else {
+				if out.PtraceEventSerializer == nil {
+					out.PtraceEventSerializer = new(PtraceEventSerializer)
+				}
+				(*out.PtraceEventSerializer).UnmarshalEasyJSON(in)
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -171,6 +182,16 @@ func easyjson692db02bEncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writ
 			out.RawString(prefix)
 		}
 		(*in.BPFFilterEventSerializer).MarshalEasyJSON(out)
+	}
+	if in.PtraceEventSerializer != nil {
+		const prefix string = ",\"ptrace\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		(*in.PtraceEventSerializer).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }

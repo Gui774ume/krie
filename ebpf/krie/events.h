@@ -15,6 +15,7 @@ enum event_type
     EVENT_DELETE_MODULE,
     EVENT_BPF,
     EVENT_BPF_FILTER,
+    EVENT_PTRACE,
     EVENT_MAX, // has to be the last one
 };
 

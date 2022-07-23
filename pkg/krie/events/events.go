@@ -44,6 +44,8 @@ const (
 	BPFEventType
 	// BPFFilterEventType is the event type of a bpf_filter event
 	BPFFilterEventType
+	// PTraceEventType is the event type of a ptrace event
+	PTraceEventType
 	// MaxEventType is used internally to get the maximum number of events.
 	MaxEventType
 )
@@ -58,6 +60,8 @@ func (t EventType) String() string {
 		return "bpf"
 	case BPFFilterEventType:
 		return "bpf_event"
+	case PTraceEventType:
+		return "ptrace"
 	default:
 		return fmt.Sprintf("EventType(%d)", t)
 	}
@@ -79,6 +83,7 @@ func AllProbesSelectors() []manager.ProbesSelector {
 	addAllKernelModuleProbesSelectors(&all)
 	addBPFProbesSelectors(&all)
 	addSetSockOptSelectors(&all)
+	addPTraceSelectors(&all)
 	return all
 }
 
@@ -96,6 +101,7 @@ func AllProbes() []*manager.Probe {
 	addKernelModuleProbes(&all)
 	addBPFProbes(&all)
 	addSetSockOptProbes(&all)
+	addPTraceProbes(&all)
 
 	return all
 }
@@ -106,6 +112,7 @@ func AllTailCallRoutes() []manager.TailCallRoute {
 	addKernelModuleTailCallRoutes(&all)
 	addBPFTailCallRoutes(&all)
 	addSetSockOptRoutes(&all)
+	addPTraceRoutes(&all)
 	return all
 }
 
@@ -118,6 +125,7 @@ type Event struct {
 	DeleteModule   DeleteModuleEvent
 	BPFEvent       BPFEvent
 	BPFFilterEvent BPFFilterEvent
+	PTraceEvent    PTraceEvent
 }
 
 // NewEvent returns a new Event instance
@@ -152,6 +160,7 @@ type EventSerializer struct {
 	*DeleteModuleEventSerializer `json:"delete_module,omitempty"`
 	*BPFEventSerializer          `json:"bpf,omitempty"`
 	*BPFFilterEventSerializer    `json:"bpf_filter,omitempty"`
+	*PtraceEventSerializer       `json:"ptrace,omitempty"`
 }
 
 // NewEventSerializer returns a new EventSerializer instance for the provided Event
@@ -170,6 +179,8 @@ func NewEventSerializer(event *Event) *EventSerializer {
 		serializer.BPFEventSerializer = NewBPFEventSerializer(&event.BPFEvent)
 	case BPFFilterEventType:
 		serializer.BPFFilterEventSerializer = NewBPFFilterEventSerializer(&event.BPFFilterEvent)
+	case PTraceEventType:
+		serializer.PtraceEventSerializer = NewPtraceEventSerializer(&event.PTraceEvent)
 	}
 	return serializer
 }

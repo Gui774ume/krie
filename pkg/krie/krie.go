@@ -136,23 +136,23 @@ func (e *KRIE) defaultEventHandler(data []byte) error {
 
 	switch event.Kernel.Type {
 	case events.InitModuleEventType:
-		read, err = event.InitModule.UnmarshallBinary(data[cursor:])
-		if err != nil {
+		if read, err = event.InitModule.UnmarshallBinary(data[cursor:]); err != nil {
 			return err
 		}
 	case events.DeleteModuleEventType:
-		read, err = event.DeleteModule.UnmarshallBinary(data[cursor:])
-		if err != nil {
+		if read, err = event.DeleteModule.UnmarshallBinary(data[cursor:]); err != nil {
 			return err
 		}
 	case events.BPFEventType:
-		read, err = event.BPFEvent.UnmarshallBinary(data[cursor:])
-		if err != nil {
+		if read, err = event.BPFEvent.UnmarshallBinary(data[cursor:]); err != nil {
 			return err
 		}
 	case events.BPFFilterEventType:
-		read, err = event.BPFFilterEvent.UnmarshallBinary(data[cursor:])
-		if err != nil {
+		if read, err = event.BPFFilterEvent.UnmarshallBinary(data[cursor:]); err != nil {
+			return err
+		}
+	case events.PTraceEventType:
+		if read, err = event.PTraceEvent.UnmarshallBinary(data[cursor:]); err != nil {
 			return err
 		}
 	default:

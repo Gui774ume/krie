@@ -13,6 +13,8 @@ enum event_type
     EVENT_ANY = 0,
     EVENT_INIT_MODULE,
     EVENT_DELETE_MODULE,
+    EVENT_BPF,
+    EVENT_BPF_FILTER,
     EVENT_MAX, // has to be the last one
 };
 

@@ -8,6 +8,7 @@ require (
 	github.com/DataDog/gopsutil v1.1.0
 	github.com/acobaugh/osrelease v0.1.0
 	github.com/cilium/ebpf v0.9.0
+	github.com/google/gopacket v1.1.19
 	github.com/mailru/easyjson v0.7.7
 	github.com/pkg/errors v0.9.1
 	github.com/shuLhan/go-bindata v4.0.0+incompatible
@@ -38,6 +39,7 @@ require (
 	github.com/vishvananda/netlink v1.2.0-beta.0.20220404152918-5e915e014938 // indirect
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
+	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

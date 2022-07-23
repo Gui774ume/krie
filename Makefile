@@ -49,3 +49,5 @@ run:
 
 install:
 	sudo cp ./bin/* /usr/bin/
+	sudo chmod aog+x /usr/bin/krie
+	sudo chmod aog+x /usr/bin/ktool

@@ -102,6 +102,19 @@ func ShouldUseSyscallExitTracepoints() uint64 {
 	return 0
 }
 
+// GetCheckHelperCallInputType returns 1 or 2 defending on the prototype of the check_helper_call function in the current kernel
+func GetCheckHelperCallInputType() uint64 {
+	input := uint64(1)
+
+	host, err := kernel.NewHost()
+	if err == nil {
+		if host.Code != 0 && host.Code >= kernel.Kernel5_14 {
+			input = uint64(2)
+		}
+	}
+	return input
+}
+
 func expandKprobe(hookpoint string, syscallName string, flag int) []string {
 	var sections []string
 	if flag&Entry == Entry {

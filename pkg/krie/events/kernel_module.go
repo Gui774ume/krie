@@ -110,61 +110,65 @@ func addAllKernelModuleProbesSelectors(all *[]manager.ProbesSelector) {
 	)
 }
 
-// InitModule is used to parse an init_module event
-type InitModule struct {
+// InitModuleEvent is used to parse an init_module event
+type InitModuleEvent struct {
 	LoadedFromMemory bool   `json:"loaded_from_memory"`
 	Name             string `json:"name"`
 }
 
 // UnmarshallBinary unmarshalls a binary representation of itself
-func (im *InitModule) UnmarshallBinary(data []byte) (int, error) {
+func (e *InitModuleEvent) UnmarshallBinary(data []byte) (int, error) {
 	if len(data) < 8+ModuleNameLen {
-		return 0, fmt.Errorf("while parsing InitModule, got len %d, needed %d: %w", len(data), 8+ModuleNameLen, ErrNotEnoughData)
+		return 0, fmt.Errorf("while parsing InitModuleEvent, got len %d, needed %d: %w", len(data), 8+ModuleNameLen, ErrNotEnoughData)
 	}
 
 	if ByteOrder.Uint32(data[0:4]) == 1 {
-		im.LoadedFromMemory = true
+		e.LoadedFromMemory = true
 	}
-	im.Name = string(bytes.Trim(data[8:8+ModuleNameLen], "\x00"))
+	var err error
+	e.Name, err = UnmarshalString(data[8:8+ModuleNameLen], ModuleNameLen)
+	if err != nil {
+		return 0, err
+	}
 	return 8 + ModuleNameLen, nil
 }
 
-// InitModuleSerializer is used to serialize InitModule
+// InitModuleEventSerializer is used to serialize InitModuleEvent
 // easyjson:json
-type InitModuleSerializer struct {
-	*InitModule
+type InitModuleEventSerializer struct {
+	*InitModuleEvent
 }
 
-// NewInitModuleSerializer returns a new instance of InitModuleSerializer
-func NewInitModuleSerializer(im *InitModule) *InitModuleSerializer {
-	return &InitModuleSerializer{
-		InitModule: im,
+// NewInitModuleSerializer returns a new instance of InitModuleEventSerializer
+func NewInitModuleSerializer(im *InitModuleEvent) *InitModuleEventSerializer {
+	return &InitModuleEventSerializer{
+		InitModuleEvent: im,
 	}
 }
 
-// DeleteModule is used to parse an delete_module event
-type DeleteModule struct {
+// DeleteModuleEvent is used to parse an delete_module event
+type DeleteModuleEvent struct {
 	Name string `json:"name"`
 }
 
 // UnmarshallBinary unmarshalls a binary representation of itself
-func (dm *DeleteModule) UnmarshallBinary(data []byte) (int, error) {
+func (dm *DeleteModuleEvent) UnmarshallBinary(data []byte) (int, error) {
 	if len(data) < ModuleNameLen {
-		return 0, fmt.Errorf("while parsing DeleteModule, got len %d, needed %d: %w", len(data), ModuleNameLen, ErrNotEnoughData)
+		return 0, fmt.Errorf("while parsing DeleteModuleEvent, got len %d, needed %d: %w", len(data), ModuleNameLen, ErrNotEnoughData)
 	}
 	dm.Name = string(bytes.Trim(data[0:ModuleNameLen], "\x00"))
 	return ModuleNameLen, nil
 }
 
-// DeleteModuleSerializer is used to serialize DeleteModule
+// DeleteModuleEventSerializer is used to serialize DeleteModuleEvent
 // easyjson:json
-type DeleteModuleSerializer struct {
-	*DeleteModule
+type DeleteModuleEventSerializer struct {
+	*DeleteModuleEvent
 }
 
-// NewDeleteModuleSerializer returns a new instance of DeleteModuleSerializer
-func NewDeleteModuleSerializer(dm *DeleteModule) *DeleteModuleSerializer {
-	return &DeleteModuleSerializer{
-		DeleteModule: dm,
+// NewDeleteModuleSerializer returns a new instance of DeleteModuleEventSerializer
+func NewDeleteModuleSerializer(dm *DeleteModuleEvent) *DeleteModuleEventSerializer {
+	return &DeleteModuleEventSerializer{
+		DeleteModuleEvent: dm,
 	}
 }

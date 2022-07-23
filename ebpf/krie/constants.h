@@ -11,6 +11,10 @@
 #define CGROUP_MAX_LENGTH 72
 #define TASK_COMM_LEN 16
 #define MODULE_NAME_LEN 56
+#define BPF_OBJ_NAME_LEN 16
+#define BPF_TAG_SIZE 8
+
+#include "events/bpf_const.h"
 
 #define LOAD_CONSTANT(param, var) asm("%0 = " param " ll" : "=r"(var))
 
@@ -18,6 +22,12 @@ static __attribute__((always_inline)) u64 get_raw_syscall_tracepoint_fallback() 
     u64 raw_syscall_tracepoint_fallback;
     LOAD_CONSTANT("raw_syscall_tracepoint_fallback", raw_syscall_tracepoint_fallback);
     return raw_syscall_tracepoint_fallback;
+}
+
+u64 __attribute__((always_inline)) get_check_helper_call_input(void) {
+    u64 input;
+    LOAD_CONSTANT("check_helper_call_input", input);
+    return input;
 }
 
 #endif

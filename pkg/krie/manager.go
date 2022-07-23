@@ -123,6 +123,10 @@ func (e *KRIE) prepareManager() {
 				Name:  "raw_syscall_tracepoint_fallback",
 				Value: events.ShouldUseSyscallExitTracepoints(),
 			},
+			{
+				Name:  "check_helper_call_input",
+				Value: events.GetCheckHelperCallInputType(),
+			},
 		},
 		ActivatedProbes: events.AllProbesSelectors(),
 	}
@@ -170,7 +174,6 @@ func (e *KRIE) loadVMLinux() error {
 			}
 		}
 	}
-
 	e.managerOptions.VerifierOptions.Programs.KernelTypes = btfSpec
 	return nil
 }

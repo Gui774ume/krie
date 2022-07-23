@@ -17,7 +17,7 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjson6d00de40DecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer, out *InitModuleSerializer) {
+func easyjson6d00de40DecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer, out *InitModuleEventSerializer) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -26,7 +26,7 @@ func easyjson6d00de40DecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 		in.Skip()
 		return
 	}
-	out.InitModule = new(InitModule)
+	out.InitModuleEvent = new(InitModuleEvent)
 	in.Delim('{')
 	for !in.IsDelim('}') {
 		key := in.UnsafeFieldName(false)
@@ -51,7 +51,7 @@ func easyjson6d00de40DecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 		in.Consumed()
 	}
 }
-func easyjson6d00de40EncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writer, in InitModuleSerializer) {
+func easyjson6d00de40EncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writer, in InitModuleEventSerializer) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -69,15 +69,15 @@ func easyjson6d00de40EncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writ
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
-func (v InitModuleSerializer) MarshalEasyJSON(w *jwriter.Writer) {
+func (v InitModuleEventSerializer) MarshalEasyJSON(w *jwriter.Writer) {
 	easyjson6d00de40EncodeGithubComGui774umeKriePkgKrieEvents(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *InitModuleSerializer) UnmarshalEasyJSON(l *jlexer.Lexer) {
+func (v *InitModuleEventSerializer) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson6d00de40DecodeGithubComGui774umeKriePkgKrieEvents(l, v)
 }
-func easyjson6d00de40DecodeGithubComGui774umeKriePkgKrieEvents1(in *jlexer.Lexer, out *DeleteModuleSerializer) {
+func easyjson6d00de40DecodeGithubComGui774umeKriePkgKrieEvents1(in *jlexer.Lexer, out *DeleteModuleEventSerializer) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -86,7 +86,7 @@ func easyjson6d00de40DecodeGithubComGui774umeKriePkgKrieEvents1(in *jlexer.Lexer
 		in.Skip()
 		return
 	}
-	out.DeleteModule = new(DeleteModule)
+	out.DeleteModuleEvent = new(DeleteModuleEvent)
 	in.Delim('{')
 	for !in.IsDelim('}') {
 		key := in.UnsafeFieldName(false)
@@ -109,7 +109,7 @@ func easyjson6d00de40DecodeGithubComGui774umeKriePkgKrieEvents1(in *jlexer.Lexer
 		in.Consumed()
 	}
 }
-func easyjson6d00de40EncodeGithubComGui774umeKriePkgKrieEvents1(out *jwriter.Writer, in DeleteModuleSerializer) {
+func easyjson6d00de40EncodeGithubComGui774umeKriePkgKrieEvents1(out *jwriter.Writer, in DeleteModuleEventSerializer) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -122,11 +122,11 @@ func easyjson6d00de40EncodeGithubComGui774umeKriePkgKrieEvents1(out *jwriter.Wri
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
-func (v DeleteModuleSerializer) MarshalEasyJSON(w *jwriter.Writer) {
+func (v DeleteModuleEventSerializer) MarshalEasyJSON(w *jwriter.Writer) {
 	easyjson6d00de40EncodeGithubComGui774umeKriePkgKrieEvents1(w, v)
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *DeleteModuleSerializer) UnmarshalEasyJSON(l *jlexer.Lexer) {
+func (v *DeleteModuleEventSerializer) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson6d00de40DecodeGithubComGui774umeKriePkgKrieEvents1(l, v)
 }

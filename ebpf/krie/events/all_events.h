@@ -9,5 +9,7 @@
 #define _ALL_EVENTS_H__
 
 #include "kernel_module.h"
+#include "bpf.h"
+#include "setsockopt.h"
 
 #endif

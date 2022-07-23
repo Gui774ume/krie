@@ -26,12 +26,66 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/Gui774ume/krie/pkg/krie/events"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
+
+	"github.com/Gui774ume/krie/pkg/krie/events"
 )
+
+var VulnDevice = &cobra.Command{
+	Use:   "vuln-device",
+	Short: "Interract with the vuln_device kernel module",
+}
+
+var Offsets = &cobra.Command{
+	Use:   "offsets",
+	Short: "Compute a kernel offset from an offset in a System.map file",
+	RunE:  offsetsCmd,
+}
+
+var Trigger = &cobra.Command{
+	Use:   "trigger",
+	Short: "Trigger the vuln_device vulnerability",
+	RunE:  triggerCmd,
+}
+
+func init() {
+	Offsets.Flags().StringVar(
+		&options.SystemMapFile,
+		"system-map-file",
+		"/boot/System.map-5.4.0-105-generic",
+		"System.map file to use when computing offsets")
+	Offsets.Flags().StringVar(
+		&options.KallsymsSystemMapOffsetSymbol,
+		"kallsyms-system-map-offset-symbol",
+		"commit_creds",
+		"symbol used to compute the diff in offset between /proc/kallsyms and System.map")
+	Offsets.Flags().Var(
+		NewKRIEToolOptionsSanitizer(&options, "gadget_addr"),
+		"gadget",
+		"gadget in System.map to translate into /proc/kallsyms")
+	Offsets.MarkFlagRequired("gadget")
+	Offsets.Flags().BoolVar(
+		&options.ComputeOffsetFromFnArray,
+		"compute-offset-from-fn-array",
+		true,
+		"compute the offset between the provided gadget_addr in kernel memory and the fn_array address of vuln_device")
+
+	Trigger.Flags().StringVar(
+		&options.VulnDevicePath,
+		"vuln-device-path",
+		"/dev/vuln_device",
+		"path to the vulnerable character device")
+	Trigger.Flags().Var(
+		NewKRIEToolOptionsSanitizer(&options, "gadget_addr"),
+		"gadget",
+		"gadget in System.map used to pivot the stack")
+	Trigger.MarkFlagRequired("gadget")
+
+	VulnDevice.AddCommand(Offsets)
+	VulnDevice.AddCommand(Trigger)
+}
 
 func fetchSymbolAddr(data []byte, symbol string) uint64 {
 	for _, s := range strings.Split(string(data), "\n") {

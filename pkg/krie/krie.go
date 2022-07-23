@@ -138,16 +138,25 @@ func (e *KRIE) defaultEventHandler(data []byte) error {
 		if err != nil {
 			return err
 		}
-		cursor += read
 	case events.DeleteModuleEventType:
 		read, err = event.DeleteModule.UnmarshallBinary(data[cursor:])
 		if err != nil {
 			return err
 		}
-		cursor += read
+	case events.BPFEventType:
+		read, err = event.BPFEvent.UnmarshallBinary(data[cursor:])
+		if err != nil {
+			return err
+		}
+	case events.BPFFilterEventType:
+		read, err = event.BPFFilterEvent.UnmarshallBinary(data[cursor:])
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Kernel.Type)
 	}
+	cursor += read
 
 	// write to output file
 	if e.outputFile != nil {

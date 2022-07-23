@@ -28,8 +28,10 @@ func easyjson692db02bDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 	}
 	out.KernelEventSerializer = new(KernelEventSerializer)
 	out.ProcessContextSerializer = new(ProcessContextSerializer)
-	out.InitModuleSerializer = new(InitModuleSerializer)
-	out.DeleteModuleSerializer = new(DeleteModuleSerializer)
+	out.InitModuleEventSerializer = new(InitModuleEventSerializer)
+	out.DeleteModuleEventSerializer = new(DeleteModuleEventSerializer)
+	out.BPFEventSerializer = new(BPFEventSerializer)
+	out.BPFFilterEventSerializer = new(BPFFilterEventSerializer)
 	in.Delim('{')
 	for !in.IsDelim('}') {
 		key := in.UnsafeFieldName(false)
@@ -63,22 +65,42 @@ func easyjson692db02bDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 		case "init_module":
 			if in.IsNull() {
 				in.Skip()
-				out.InitModuleSerializer = nil
+				out.InitModuleEventSerializer = nil
 			} else {
-				if out.InitModuleSerializer == nil {
-					out.InitModuleSerializer = new(InitModuleSerializer)
+				if out.InitModuleEventSerializer == nil {
+					out.InitModuleEventSerializer = new(InitModuleEventSerializer)
 				}
-				(*out.InitModuleSerializer).UnmarshalEasyJSON(in)
+				(*out.InitModuleEventSerializer).UnmarshalEasyJSON(in)
 			}
 		case "delete_module":
 			if in.IsNull() {
 				in.Skip()
-				out.DeleteModuleSerializer = nil
+				out.DeleteModuleEventSerializer = nil
 			} else {
-				if out.DeleteModuleSerializer == nil {
-					out.DeleteModuleSerializer = new(DeleteModuleSerializer)
+				if out.DeleteModuleEventSerializer == nil {
+					out.DeleteModuleEventSerializer = new(DeleteModuleEventSerializer)
 				}
-				(*out.DeleteModuleSerializer).UnmarshalEasyJSON(in)
+				(*out.DeleteModuleEventSerializer).UnmarshalEasyJSON(in)
+			}
+		case "bpf":
+			if in.IsNull() {
+				in.Skip()
+				out.BPFEventSerializer = nil
+			} else {
+				if out.BPFEventSerializer == nil {
+					out.BPFEventSerializer = new(BPFEventSerializer)
+				}
+				(*out.BPFEventSerializer).UnmarshalEasyJSON(in)
+			}
+		case "bpf_filter":
+			if in.IsNull() {
+				in.Skip()
+				out.BPFFilterEventSerializer = nil
+			} else {
+				if out.BPFFilterEventSerializer == nil {
+					out.BPFFilterEventSerializer = new(BPFFilterEventSerializer)
+				}
+				(*out.BPFFilterEventSerializer).UnmarshalEasyJSON(in)
 			}
 		default:
 			in.SkipRecursive()
@@ -110,7 +132,7 @@ func easyjson692db02bEncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writ
 		}
 		(*in.ProcessContextSerializer).MarshalEasyJSON(out)
 	}
-	if in.InitModuleSerializer != nil {
+	if in.InitModuleEventSerializer != nil {
 		const prefix string = ",\"init_module\":"
 		if first {
 			first = false
@@ -118,9 +140,9 @@ func easyjson692db02bEncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writ
 		} else {
 			out.RawString(prefix)
 		}
-		(*in.InitModuleSerializer).MarshalEasyJSON(out)
+		(*in.InitModuleEventSerializer).MarshalEasyJSON(out)
 	}
-	if in.DeleteModuleSerializer != nil {
+	if in.DeleteModuleEventSerializer != nil {
 		const prefix string = ",\"delete_module\":"
 		if first {
 			first = false
@@ -128,7 +150,27 @@ func easyjson692db02bEncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writ
 		} else {
 			out.RawString(prefix)
 		}
-		(*in.DeleteModuleSerializer).MarshalEasyJSON(out)
+		(*in.DeleteModuleEventSerializer).MarshalEasyJSON(out)
+	}
+	if in.BPFEventSerializer != nil {
+		const prefix string = ",\"bpf\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		(*in.BPFEventSerializer).MarshalEasyJSON(out)
+	}
+	if in.BPFFilterEventSerializer != nil {
+		const prefix string = ",\"bpf_filter\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		(*in.BPFFilterEventSerializer).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }

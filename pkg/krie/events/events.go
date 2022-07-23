@@ -40,6 +40,10 @@ const (
 	InitModuleEventType
 	// DeleteModuleEventType is the event type of a delete module event
 	DeleteModuleEventType
+	// BPFEventType is the event type of a BPF event
+	BPFEventType
+	// BPFFilterEventType is the event type of a bpf_filter event
+	BPFFilterEventType
 	// MaxEventType is used internally to get the maximum number of events.
 	MaxEventType
 )
@@ -50,6 +54,10 @@ func (t EventType) String() string {
 		return "init_module"
 	case DeleteModuleEventType:
 		return "delete_module"
+	case BPFEventType:
+		return "bpf"
+	case BPFFilterEventType:
+		return "bpf_event"
 	default:
 		return fmt.Sprintf("EventType(%d)", t)
 	}
@@ -65,6 +73,8 @@ func AllProbesSelectors() []manager.ProbesSelector {
 		},
 	}
 	addAllKernelModuleProbesSelectors(&all)
+	addBPFProbesSelectors(&all)
+	addSetSockOptSelectors(&all)
 	return all
 }
 
@@ -80,6 +90,8 @@ func AllProbes() []*manager.Probe {
 		},
 	}
 	addKernelModuleProbes(&all)
+	addBPFProbes(&all)
+	addSetSockOptProbes(&all)
 
 	return all
 }
@@ -88,16 +100,20 @@ func AllProbes() []*manager.Probe {
 func AllTailCallRoutes() []manager.TailCallRoute {
 	var all []manager.TailCallRoute
 	addKernelModuleTailCallRoutes(&all)
+	addBPFTailCallRoutes(&all)
+	addSetSockOptRoutes(&all)
 	return all
 }
 
 // Event is used to parse the events sent from kernel space
 type Event struct {
-	Kernel  KernelEvent    `json:"event"`
-	Process ProcessContext `json:"process"`
+	Kernel  KernelEvent
+	Process ProcessContext
 
-	InitModule   InitModule `json:"init_module"`
-	DeleteModule DeleteModule
+	InitModule     InitModuleEvent
+	DeleteModule   DeleteModuleEvent
+	BPFEvent       BPFEvent
+	BPFFilterEvent BPFFilterEvent
 }
 
 // NewEvent returns a new Event instance
@@ -128,8 +144,10 @@ type EventSerializer struct {
 	*KernelEventSerializer    `json:"event,omitempty"`
 	*ProcessContextSerializer `json:"process,omitempty"`
 
-	*InitModuleSerializer   `json:"init_module,omitempty"`
-	*DeleteModuleSerializer `json:"delete_module,omitempty"`
+	*InitModuleEventSerializer   `json:"init_module,omitempty"`
+	*DeleteModuleEventSerializer `json:"delete_module,omitempty"`
+	*BPFEventSerializer          `json:"bpf,omitempty"`
+	*BPFFilterEventSerializer    `json:"bpf_filter,omitempty"`
 }
 
 // NewEventSerializer returns a new EventSerializer instance for the provided Event
@@ -141,9 +159,13 @@ func NewEventSerializer(event *Event) *EventSerializer {
 
 	switch event.Kernel.Type {
 	case InitModuleEventType:
-		serializer.InitModuleSerializer = NewInitModuleSerializer(&event.InitModule)
+		serializer.InitModuleEventSerializer = NewInitModuleSerializer(&event.InitModule)
 	case DeleteModuleEventType:
-		serializer.DeleteModuleSerializer = NewDeleteModuleSerializer(&event.DeleteModule)
+		serializer.DeleteModuleEventSerializer = NewDeleteModuleSerializer(&event.DeleteModule)
+	case BPFEventType:
+		serializer.BPFEventSerializer = NewBPFEventSerializer(&event.BPFEvent)
+	case BPFFilterEventType:
+		serializer.BPFFilterEventSerializer = NewBPFFilterEventSerializer(&event.BPFFilterEvent)
 	}
 	return serializer
 }

@@ -20,6 +20,23 @@ struct syscall_cache_t {
         struct {
             char *name;
         } delete_module;
+
+        struct {
+            int cmd;
+            u32 map_id;
+            u32 prog_id;
+            int retval;
+            u64 helpers[3];
+            union bpf_attr_def *attr;
+        } bpf;
+
+        struct {
+            int bpf_filter_cmd;
+            u16 family;
+            u16 type;
+            u16 protocol;
+            u16 prog_len;
+        } bpf_filter;
     };
 };
 

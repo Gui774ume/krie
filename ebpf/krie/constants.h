@@ -13,6 +13,7 @@
 #define MODULE_NAME_LEN 56
 #define BPF_OBJ_NAME_LEN 16
 #define BPF_TAG_SIZE 8
+#define SYMBOL_NAME_LENGTH 64
 
 #include "events/bpf_const.h"
 

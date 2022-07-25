@@ -12,5 +12,6 @@
 #include "bpf.h"
 #include "setsockopt.h"
 #include "ptrace.h"
+#include "kprobe.h"
 
 #endif

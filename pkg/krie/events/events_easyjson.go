@@ -33,6 +33,7 @@ func easyjson692db02bDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 	out.BPFEventSerializer = new(BPFEventSerializer)
 	out.BPFFilterEventSerializer = new(BPFFilterEventSerializer)
 	out.PtraceEventSerializer = new(PtraceEventSerializer)
+	out.KProbeEventSerializer = new(KProbeEventSerializer)
 	in.Delim('{')
 	for !in.IsDelim('}') {
 		key := in.UnsafeFieldName(false)
@@ -113,6 +114,16 @@ func easyjson692db02bDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 				}
 				(*out.PtraceEventSerializer).UnmarshalEasyJSON(in)
 			}
+		case "kprobe":
+			if in.IsNull() {
+				in.Skip()
+				out.KProbeEventSerializer = nil
+			} else {
+				if out.KProbeEventSerializer == nil {
+					out.KProbeEventSerializer = new(KProbeEventSerializer)
+				}
+				(*out.KProbeEventSerializer).UnmarshalEasyJSON(in)
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -192,6 +203,16 @@ func easyjson692db02bEncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writ
 			out.RawString(prefix)
 		}
 		(*in.PtraceEventSerializer).MarshalEasyJSON(out)
+	}
+	if in.KProbeEventSerializer != nil {
+		const prefix string = ",\"kprobe\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		(*in.KProbeEventSerializer).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }

@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/DataDog/btf-internals v0.0.0-20220510090419-14c22a91224c
-	github.com/DataDog/ebpf-manager v0.0.0-20220721120425-687d23dced7c
+	github.com/DataDog/ebpf-manager v0.0.0-20220725144023-e4b26003498c
 	github.com/DataDog/gopsutil v1.1.0
 	github.com/acobaugh/osrelease v0.1.0
 	github.com/cilium/ebpf v0.9.0

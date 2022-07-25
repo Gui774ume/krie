@@ -43,6 +43,11 @@ struct syscall_cache_t {
             u32 pid;
             u64 addr;
         } ptrace;
+
+        struct {
+            struct kprobe *p;
+            u32 kprobe_type;
+        } kprobe;
     };
 };
 

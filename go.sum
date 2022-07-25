@@ -2,6 +2,8 @@ github.com/DataDog/btf-internals v0.0.0-20220510090419-14c22a91224c h1:/SvbLMg+V
 github.com/DataDog/btf-internals v0.0.0-20220510090419-14c22a91224c/go.mod h1:cBVVIJ/f6XtwFL/U9QI5QDA/LcaiSiI8B4ipyGXzc1s=
 github.com/DataDog/ebpf-manager v0.0.0-20220721120425-687d23dced7c h1:MBFYyOFvQ5do3kya9Yy1f3s4vAeP/Qm80dNMYDQfiGM=
 github.com/DataDog/ebpf-manager v0.0.0-20220721120425-687d23dced7c/go.mod h1:8bqjDI64T80GHECNIJp9nY4+0mgX4Tc+Kcdk3p0NeIA=
+github.com/DataDog/ebpf-manager v0.0.0-20220725144023-e4b26003498c h1:qPPbhmgrIDLTCD8VJnQT+cFUQey7+oXTTSkdaY53rHI=
+github.com/DataDog/ebpf-manager v0.0.0-20220725144023-e4b26003498c/go.mod h1:bsDzn0mGARdZbLmFBGUhjF8nJTAMyvvXSIFO+838dUs=
 github.com/DataDog/gopsutil v0.0.0-20200624212600-1b53412ef321/go.mod h1:tGQp6XG4XpOyy67WG/YWXVxzOY6LejK35e8KcQhtRIQ=
 github.com/DataDog/gopsutil v1.1.0 h1:qjgSaWYcafJsbYW6FqSvzwuJcTUyQek5LzQgM+1knNc=
 github.com/DataDog/gopsutil v1.1.0/go.mod h1:glkxNt/qRu9lnpmUEQwOIAXW+COWDTBOTEAHqbgBPts=

@@ -155,6 +155,10 @@ func (e *KRIE) defaultEventHandler(data []byte) error {
 		if read, err = event.PTraceEvent.UnmarshallBinary(data[cursor:]); err != nil {
 			return err
 		}
+	case events.KProbeEventType:
+		if read, err = event.KProbeEvent.UnmarshallBinary(data[cursor:]); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Kernel.Type)
 	}

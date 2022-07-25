@@ -604,6 +604,21 @@ var (
 		"PTRACE_SECCOMP_GET_METADATA": unix.PTRACE_SECCOMP_GET_METADATA,
 		"PTRACE_GET_SYSCALL_INFO":     unix.PTRACE_GET_SYSCALL_INFO,
 	}
+
+	KProbeCommandConstants = map[string]KProbeCommand{
+		"REGISTER_KPROBE":      1,
+		"UNREGISTER_KPROBE":    2,
+		"REGISTER_KRETPROBE":   3,
+		"UNREGISTER_KRETPROBE": 4,
+		"ENABLE_KPROBE":        5,
+		"DISABLE_KPROBE":       6,
+		"DISARM_ALL_KPROBE":    7,
+	}
+
+	KProbeTypeConstants = map[string]KProbeType{
+		"KPROBE_TYPE":    1,
+		"KRETPROBE_TYPE": 2,
+	}
 )
 
 var (
@@ -617,7 +632,21 @@ var (
 	l3ProtocolStrings     = map[L3Protocol]string{}
 	socketTypeStrings     = map[SocketType]string{}
 	ptraceFlagsStrings    = map[PTraceRequest]string{}
+	kprobeCommandStrings  = map[KProbeCommand]string{}
+	kprobeTypeStrings     = map[KProbeType]string{}
 )
+
+func initKProbeCommandConstants() {
+	for k, v := range KProbeCommandConstants {
+		kprobeCommandStrings[v] = k
+	}
+}
+
+func initKProbeTypeConstants() {
+	for k, v := range KProbeTypeConstants {
+		kprobeTypeStrings[v] = k
+	}
+}
 
 func initPTraceConstants() {
 	for k, v := range ptraceConstants {
@@ -690,6 +719,8 @@ func init() {
 	initL3ProtocolConstants()
 	initSocketTypeStrings()
 	initPTraceConstants()
+	initKProbeCommandConstants()
+	initKProbeTypeConstants()
 }
 
 func bitmaskToStringArray(bitmask int, intToStrMap map[int]string) []string {
@@ -757,7 +788,7 @@ func (f PTraceRequest) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%s\"", f.String())), nil
 }
 
-// SocketType socket typ
+// SocketType socket type
 type SocketType uint32
 
 func (st SocketType) String() string {
@@ -1686,4 +1717,26 @@ type MemoryPointer uint64
 
 func (mp MemoryPointer) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("0x%x", mp)), nil
+}
+
+// KProbeType kprobe type
+type KProbeType uint32
+
+func (kt KProbeType) String() string {
+	return kprobeTypeStrings[kt]
+}
+
+func (kt KProbeType) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", kt.String())), nil
+}
+
+// KProbeCommand kprobe command
+type KProbeCommand uint32
+
+func (kc KProbeCommand) String() string {
+	return kprobeCommandStrings[kc]
+}
+
+func (kc KProbeCommand) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", kc.String())), nil
 }

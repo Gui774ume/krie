@@ -16,6 +16,7 @@ enum event_type
     EVENT_BPF,
     EVENT_BPF_FILTER,
     EVENT_PTRACE,
+    EVENT_KPROBE,
     EVENT_MAX, // has to be the last one
 };
 

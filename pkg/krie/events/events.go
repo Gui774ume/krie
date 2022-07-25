@@ -46,6 +46,8 @@ const (
 	BPFFilterEventType
 	// PTraceEventType is the event type of a ptrace event
 	PTraceEventType
+	// KProbeEventType is the event type of a kprobe event
+	KProbeEventType
 	// MaxEventType is used internally to get the maximum number of events.
 	MaxEventType
 )
@@ -62,6 +64,8 @@ func (t EventType) String() string {
 		return "bpf_event"
 	case PTraceEventType:
 		return "ptrace"
+	case KProbeEventType:
+		return "kprobe"
 	default:
 		return fmt.Sprintf("EventType(%d)", t)
 	}
@@ -84,6 +88,7 @@ func AllProbesSelectors() []manager.ProbesSelector {
 	addBPFProbesSelectors(&all)
 	addSetSockOptSelectors(&all)
 	addPTraceSelectors(&all)
+	addKProbeSelectors(&all)
 	return all
 }
 
@@ -102,6 +107,7 @@ func AllProbes() []*manager.Probe {
 	addBPFProbes(&all)
 	addSetSockOptProbes(&all)
 	addPTraceProbes(&all)
+	addKProbeProbes(&all)
 
 	return all
 }
@@ -113,6 +119,7 @@ func AllTailCallRoutes() []manager.TailCallRoute {
 	addBPFTailCallRoutes(&all)
 	addSetSockOptRoutes(&all)
 	addPTraceRoutes(&all)
+	addKProbeRoutes(&all)
 	return all
 }
 
@@ -126,6 +133,7 @@ type Event struct {
 	BPFEvent       BPFEvent
 	BPFFilterEvent BPFFilterEvent
 	PTraceEvent    PTraceEvent
+	KProbeEvent    KProbeEvent
 }
 
 // NewEvent returns a new Event instance
@@ -161,6 +169,7 @@ type EventSerializer struct {
 	*BPFEventSerializer          `json:"bpf,omitempty"`
 	*BPFFilterEventSerializer    `json:"bpf_filter,omitempty"`
 	*PtraceEventSerializer       `json:"ptrace,omitempty"`
+	*KProbeEventSerializer       `json:"kprobe,omitempty"`
 }
 
 // NewEventSerializer returns a new EventSerializer instance for the provided Event
@@ -181,6 +190,8 @@ func NewEventSerializer(event *Event) *EventSerializer {
 		serializer.BPFFilterEventSerializer = NewBPFFilterEventSerializer(&event.BPFFilterEvent)
 	case PTraceEventType:
 		serializer.PtraceEventSerializer = NewPtraceEventSerializer(&event.PTraceEvent)
+	case KProbeEventType:
+		serializer.KProbeEventSerializer = NewKProbeEventSerializer(&event.KProbeEvent)
 	}
 	return serializer
 }

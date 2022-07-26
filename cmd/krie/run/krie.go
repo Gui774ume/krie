@@ -20,27 +20,58 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 
 	"github.com/Gui774ume/krie/pkg/krie"
 )
 
+func parseConfig() error {
+	f, err := os.Open(options.Config)
+	if err != nil {
+		return fmt.Errorf("couldn't load config file %s: %w", options.Config, err)
+	}
+	defer f.Close()
+
+	decoder := yaml.NewDecoder(f)
+	if err = decoder.Decode(&options.KRIEOptions); err != nil {
+		return fmt.Errorf("couldn't decode config file %s: %w", options.Config, err)
+	}
+
+	// create output directory
+	if len(options.KRIEOptions.Output) > 0 {
+		_ = os.MkdirAll(filepath.Dir(options.KRIEOptions.Output), 0644)
+	}
+
+	// check if the provided vmlinux exists
+	if len(options.KRIEOptions.VMLinux) > 0 {
+		_, err = os.Stat(options.KRIEOptions.VMLinux)
+		if err != nil {
+			return fmt.Errorf("couldn't find vmlinux: %w", err)
+		}
+	}
+	return nil
+}
+
 func krieCmd(cmd *cobra.Command, args []string) error {
+	if err := parseConfig(); err != nil {
+
+	}
 	// Set log level
-	logrus.SetLevel(options.KRIEOptions.LogLevel)
+	logrus.SetLevel(logrus.Level(options.KRIEOptions.LogLevel))
 
 	// create a new KRIE instance
 	trace, err := krie.NewKRIE(options.KRIEOptions)
 	if err != nil {
-		return errors.Wrap(err, "couldn't create a new instance of KRIE")
+		return fmt.Errorf("couldn't create a new instance of KRIE: %w", err)
 	}
 
 	logrus.Infoln("Tracing started ... (Ctrl + C to stop)\n")
 	if err := trace.Start(); err != nil {
-		return errors.Wrap(err, "couldn't start")
+		return fmt.Errorf("couldn't start: %w", err)
 	}
 
 	wait()

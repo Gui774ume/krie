@@ -49,6 +49,8 @@ const (
 	PTraceEventType
 	// KProbeEventType is the event type of a kprobe event
 	KProbeEventType
+	// SysCtlEventType  is the event type of a sysctl event
+	SysCtlEventType
 	// MaxEventType is used internally to get the maximum number of events.
 	MaxEventType
 )
@@ -67,6 +69,8 @@ func (t EventType) String() string {
 		return "ptrace"
 	case KProbeEventType:
 		return "kprobe"
+	case SysCtlEventType:
+		return "sysctl"
 	default:
 		return fmt.Sprintf("EventType(%d)", t)
 	}
@@ -138,6 +142,25 @@ func (etl *EventTypeList) Contains(et EventType) bool {
 	return false
 }
 
+// UnmarshalYAML parses a string representation of a list of event types
+func (etl *EventTypeList) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var eventTypes []string
+	err := unmarshal(&eventTypes)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal the list of event types: %w", err)
+	}
+
+	for _, et := range eventTypes {
+		// check if the provided event type exists
+		newEventType := ParseEventType(et)
+		if newEventType == UnknownEventType {
+			return fmt.Errorf("unknown event type: %s", et)
+		}
+		etl.Insert(newEventType)
+	}
+	return nil
+}
+
 // AllProbesSelectors returns all the probes selectors
 func AllProbesSelectors(events EventTypeList) []manager.ProbesSelector {
 	all := []manager.ProbesSelector{
@@ -159,6 +182,9 @@ func AllProbesSelectors(events EventTypeList) []manager.ProbesSelector {
 	}
 	if events.Contains(KProbeEventType) {
 		addKProbeSelectors(&all)
+	}
+	if events.Contains(SysCtlEventType) {
+		addSysCtlSelectors(&all)
 	}
 	return all
 }
@@ -187,6 +213,9 @@ func AllProbes(events EventTypeList) []*manager.Probe {
 	if events.Contains(KProbeEventType) {
 		addKProbeProbes(&all)
 	}
+	if events.Contains(SysCtlEventType) {
+		addSysCtlProbes(&all)
+	}
 
 	return all
 }
@@ -208,6 +237,9 @@ func AllTailCallRoutes(events EventTypeList) []manager.TailCallRoute {
 	if events.Contains(KProbeEventType) {
 		addKProbeRoutes(&all)
 	}
+	if events.Contains(SysCtlEventType) {
+		addSysCtlRoutes(&all)
+	}
 	return all
 }
 
@@ -222,6 +254,7 @@ type Event struct {
 	BPFFilterEvent BPFFilterEvent
 	PTraceEvent    PTraceEvent
 	KProbeEvent    KProbeEvent
+	SysCtlEvent    SysCtlEvent
 }
 
 // NewEvent returns a new Event instance
@@ -258,6 +291,7 @@ type EventSerializer struct {
 	*BPFFilterEventSerializer    `json:"bpf_filter,omitempty"`
 	*PtraceEventSerializer       `json:"ptrace,omitempty"`
 	*KProbeEventSerializer       `json:"kprobe,omitempty"`
+	*SysCtlEventEventSerializer  `json:"sysctl,omitempty""`
 }
 
 // NewEventSerializer returns a new EventSerializer instance for the provided Event
@@ -280,6 +314,8 @@ func NewEventSerializer(event *Event) *EventSerializer {
 		serializer.PtraceEventSerializer = NewPtraceEventSerializer(&event.PTraceEvent)
 	case KProbeEventType:
 		serializer.KProbeEventSerializer = NewKProbeEventSerializer(&event.KProbeEvent)
+	case SysCtlEventType:
+		serializer.SysCtlEventEventSerializer = NewSysCtlEventSerializer(&event.SysCtlEvent)
 	}
 	return serializer
 }

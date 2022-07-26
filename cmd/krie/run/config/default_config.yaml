@@ -1,0 +1,24 @@
+## Log level, options are: panic, fatal, error, warn, info, debug or trace
+log_level: debug
+
+## JSON output file, leave empty to disable JSON output.
+output: "/tmp/lolo.json"
+
+## BTF information for the current kernel in .tar.xz format (required only if KRIE isn't able to locate it by itself)
+vmlinux: ""
+
+## List of events to activate (empty means everything)
+events:
+  - sysctl
+
+## Default settings for sysctl
+sys_ctl_default:
+  block_read_access: false
+  block_write_access: false
+
+## Custom settings for sysctl
+sys_ctl_parameters:
+  kernel/yama/ptrace_scope:
+    block_write_access: true
+  kernel/ftrace_enabled:
+    override_input_value_with: "1\n"

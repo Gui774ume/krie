@@ -620,6 +620,14 @@ var (
 		"KPROBE_TYPE":    1,
 		"KRETPROBE_TYPE": 2,
 	}
+
+	SysCtlActionConstants = map[string]SysCtlAction{
+		"SYSCTL_SHOT":     0,
+		"SYSCTL_OK":       1,
+		"SYSCTL_OVERRIDE": 2,
+		"SYSCTL_EINVAL":   3,
+		"SYSCTL_ERANGE":   4,
+	}
 )
 
 var (
@@ -635,7 +643,14 @@ var (
 	ptraceFlagsStrings    = map[PTraceRequest]string{}
 	kprobeCommandStrings  = map[KProbeCommand]string{}
 	kprobeTypeStrings     = map[KProbeType]string{}
+	sysctlActionStrings   = map[SysCtlAction]string{}
 )
+
+func initSysCtlActionConstants() {
+	for k, v := range SysCtlActionConstants {
+		sysctlActionStrings[v] = k
+	}
+}
 
 func initKProbeCommandConstants() {
 	for k, v := range KProbeCommandConstants {
@@ -722,6 +737,7 @@ func init() {
 	initPTraceConstants()
 	initKProbeCommandConstants()
 	initKProbeTypeConstants()
+	initSysCtlActionConstants()
 }
 
 func bitmaskToStringArray(bitmask int, intToStrMap map[int]string) []string {
@@ -1740,4 +1756,15 @@ func (kc KProbeCommand) String() string {
 
 func (kc KProbeCommand) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%s\"", kc.String())), nil
+}
+
+// SysCtlAction command
+type SysCtlAction uint64
+
+func (sca SysCtlAction) String() string {
+	return sysctlActionStrings[sca]
+}
+
+func (sca SysCtlAction) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", sca.String())), nil
 }

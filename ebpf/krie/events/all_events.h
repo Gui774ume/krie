@@ -13,5 +13,6 @@
 #include "setsockopt.h"
 #include "ptrace.h"
 #include "kprobe.h"
+#include "sysctl.h"
 
 #endif

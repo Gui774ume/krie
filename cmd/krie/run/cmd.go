@@ -18,6 +18,8 @@ package run
 
 import (
 	"github.com/spf13/cobra"
+
+	"github.com/Gui774ume/krie/pkg/krie"
 )
 
 // KRIE represents the base command of krie
@@ -26,28 +28,13 @@ var KRIE = &cobra.Command{
 	RunE: krieCmd,
 }
 
-var options CLIOptions
+var options = CLIOptions{
+	KRIEOptions: krie.NewOptions(),
+}
 
 func init() {
-	KRIE.Flags().VarP(
-		NewKRIEOptionsSanitizer(&options.KRIEOptions, "log_level"),
-		"log-level",
-		"l",
-		"log level, options: panic, fatal, error, warn, info, debug or trace")
-
-	KRIE.Flags().VarP(
-		NewKRIEOptionsSanitizer(&options.KRIEOptions, "output"),
-		"output",
-		"o",
-		"JSON output file")
-
 	KRIE.Flags().Var(
-		NewKRIEOptionsSanitizer(&options.KRIEOptions, "vmlinux"),
-		"vmlinux",
-		"BTF information for the current kernel in .tar.xz format (required only if KRIE isn't able to locate it by itself)")
-
-	KRIE.Flags().Var(
-		NewKRIEOptionsSanitizer(&options.KRIEOptions, "event"),
-		"event",
-		"List of events to activate (empty means everything)")
+		NewKRIEOptionsSanitizer(&options, "config"),
+		"config",
+		"KRIE config file, command line arguments erase the content of the config file")
 }

@@ -22,17 +22,17 @@
                                                                                                                        \
     __attribute__((always_inline)) struct NAME##_t *new_##NAME() {                                                     \
         u32 key = STRUCT_ZERO_KEY;                                                                                     \
-        struct NAME##_t *zero = bpf_map_lookup_elem(&NAME##_gen, &key);                                              \
+        struct NAME##_t *zero = bpf_map_lookup_elem(&NAME##_gen, &key);                                                \
         if (zero == NULL) {                                                                                            \
             return NULL;                                                                                               \
         }                                                                                                              \
         key = STRUCT_WORKING_KEY;                                                                                      \
-        struct NAME##_t *elem = bpf_map_lookup_elem(&NAME##_gen, &key);                                              \
+        struct NAME##_t *elem = bpf_map_lookup_elem(&NAME##_gen, &key);                                                \
         if (elem == NULL) {                                                                                            \
             return NULL;                                                                                               \
         }                                                                                                              \
                                                                                                                        \
-        bpf_probe_read(elem, sizeof(struct NAME##_t), zero);                                                           \
+        bpf_probe_read_kernel(elem, sizeof(struct NAME##_t), zero);                                                    \
         return elem;                                                                                                   \
     };                                                                                                                 \
 

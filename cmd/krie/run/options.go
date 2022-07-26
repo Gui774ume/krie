@@ -19,29 +19,25 @@ package run
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/Gui774ume/krie/pkg/krie"
-	"github.com/Gui774ume/krie/pkg/krie/events"
 )
 
 // CLIOptions are the command line options of ssh-probe
 type CLIOptions struct {
-	KRIEOptions krie.Options
+	Config      string
+	KRIEOptions *krie.Options
 }
 
 // KRIEOptionsSanitizer is a generic options sanitizer for KRIE
 type KRIEOptionsSanitizer struct {
 	field   string
-	options *krie.Options
+	options *CLIOptions
 }
 
 // NewKRIEOptionsSanitizer creates a new instance of KRIEOptionsSanitizer
-func NewKRIEOptionsSanitizer(options *krie.Options, field string) *KRIEOptionsSanitizer {
-	// set default values
-	options.LogLevel = logrus.InfoLevel
+func NewKRIEOptionsSanitizer(options *CLIOptions, field string) *KRIEOptionsSanitizer {
+	options.Config = "./cmd/krie/run/config/default_config.yaml"
 
 	return &KRIEOptionsSanitizer{
 		options: options,
@@ -51,14 +47,8 @@ func NewKRIEOptionsSanitizer(options *krie.Options, field string) *KRIEOptionsSa
 
 func (kos *KRIEOptionsSanitizer) String() string {
 	switch kos.field {
-	case "log_level":
-		return fmt.Sprintf("%v", kos.options.LogLevel)
-	case "output":
-		return kos.options.Output
-	case "vmlinux":
-		return kos.options.VMLinux
-	case "event":
-		return kos.options.Events.String()
+	case "config":
+		return kos.options.Config
 	default:
 		return ""
 	}
@@ -66,33 +56,11 @@ func (kos *KRIEOptionsSanitizer) String() string {
 
 func (kos *KRIEOptionsSanitizer) Set(val string) error {
 	switch kos.field {
-	case "log_level":
-		sanitized, err := logrus.ParseLevel(val)
-		if err != nil {
-			return err
-		}
-		kos.options.LogLevel = sanitized
-		return nil
-	case "output":
-		// create output directory
-		_ = os.MkdirAll(filepath.Dir(val), 0644)
-		kos.options.Output = val
-		return nil
-	case "vmlinux":
-		// check if the provided file exists
+	case "config":
 		_, err := os.Stat(val)
 		if err != nil {
-			return fmt.Errorf("couldn't find vmlinux: %w", err)
+			return fmt.Errorf("couldn't find config file %s: %w", val, err)
 		}
-		kos.options.VMLinux = val
-		return nil
-	case "event":
-		// check if the provided event type exists
-		et := events.ParseEventType(val)
-		if et == events.UnknownEventType {
-			return fmt.Errorf("unknown event type: %s", val)
-		}
-		kos.options.Events.Insert(et)
 		return nil
 	default:
 		return nil
@@ -101,14 +69,8 @@ func (kos *KRIEOptionsSanitizer) Set(val string) error {
 
 func (kos *KRIEOptionsSanitizer) Type() string {
 	switch kos.field {
-	case "log_level":
+	case "config":
 		return "string"
-	case "output":
-		return "string"
-	case "vmlinux":
-		return "string"
-	case "event":
-		return "repeated string"
 	default:
 		return ""
 	}

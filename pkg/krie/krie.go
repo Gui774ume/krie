@@ -22,6 +22,7 @@ import (
 	"time"
 
 	manager "github.com/DataDog/ebpf-manager"
+	"github.com/cilium/ebpf"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Gui774ume/krie/pkg/krie/events"
@@ -34,16 +35,19 @@ type KRIE struct {
 	timeResolver *events.TimeResolver
 	outputFile   *os.File
 
-	options        Options
+	options        *Options
 	manager        *manager.Manager
 	managerOptions manager.Options
+
+	sysctlParameters *ebpf.Map
+	sysctlDefault    *ebpf.Map
 
 	startTime time.Time
 	numCPU    int
 }
 
 // NewKRIE creates a new KRIE instance
-func NewKRIE(options Options) (*KRIE, error) {
+func NewKRIE(options *Options) (*KRIE, error) {
 	var err error
 
 	if err = options.IsValid(); err != nil {
@@ -158,6 +162,17 @@ func (e *KRIE) defaultEventHandler(data []byte) error {
 	case events.KProbeEventType:
 		if read, err = event.KProbeEvent.UnmarshallBinary(data[cursor:]); err != nil {
 			return err
+		}
+	case events.SysCtlEventType:
+		if read, err = event.SysCtlEvent.UnmarshallBinary(data[cursor:]); err != nil {
+			return err
+		}
+		if event.SysCtlEvent.Action == 2 {
+			if param, ok := e.options.SysCtlParameters[event.SysCtlEvent.Name]; ok {
+				event.SysCtlEvent.NewValueOverriddenWith = param.OverrideInputValueWith
+			} else {
+				event.SysCtlEvent.NewValueOverriddenWith = e.options.SysCtlDefault.OverrideInputValueWith
+			}
 		}
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Kernel.Type)

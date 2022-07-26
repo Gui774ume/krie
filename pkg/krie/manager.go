@@ -62,6 +62,11 @@ func (e *KRIE) startManager() error {
 		return err
 	}
 
+	// load filters
+	if err = e.loadFilters(); err != nil {
+		return err
+	}
+
 	// start the manager
 	if err = e.manager.Start(); err != nil {
 		return fmt.Errorf("couldn't start manager: %w", err)
@@ -236,5 +241,20 @@ func (e *KRIE) loadSpecFromBTFHub() (*btf.Spec, error) {
 }
 
 func (e *KRIE) selectMaps() error {
+	var err error
+	e.sysctlParameters, _, err = e.manager.GetMap("sysctl_parameters")
+	if err != nil {
+		return fmt.Errorf("couldn't find maps/sysctl_parameters: %w", err)
+	}
+
+	e.sysctlDefault, _, err = e.manager.GetMap("sysctl_default")
+	if err != nil {
+		return fmt.Errorf("couldn't find maps/sysctl_parameters_default: %w", err)
+	}
 	return nil
+}
+
+func (e *KRIE) loadFilters() error {
+	// load sysctl parameters
+	return e.loadSysCtlParameters()
 }

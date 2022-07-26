@@ -34,6 +34,7 @@ func easyjson692db02bDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 	out.BPFFilterEventSerializer = new(BPFFilterEventSerializer)
 	out.PtraceEventSerializer = new(PtraceEventSerializer)
 	out.KProbeEventSerializer = new(KProbeEventSerializer)
+	out.SysCtlEventEventSerializer = new(SysCtlEventEventSerializer)
 	in.Delim('{')
 	for !in.IsDelim('}') {
 		key := in.UnsafeFieldName(false)
@@ -124,6 +125,16 @@ func easyjson692db02bDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 				}
 				(*out.KProbeEventSerializer).UnmarshalEasyJSON(in)
 			}
+		case "sysctl":
+			if in.IsNull() {
+				in.Skip()
+				out.SysCtlEventEventSerializer = nil
+			} else {
+				if out.SysCtlEventEventSerializer == nil {
+					out.SysCtlEventEventSerializer = new(SysCtlEventEventSerializer)
+				}
+				(*out.SysCtlEventEventSerializer).UnmarshalEasyJSON(in)
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -213,6 +224,16 @@ func easyjson692db02bEncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writ
 			out.RawString(prefix)
 		}
 		(*in.KProbeEventSerializer).MarshalEasyJSON(out)
+	}
+	if in.SysCtlEventEventSerializer != nil {
+		const prefix string = ",\"sysctl\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		(*in.SysCtlEventEventSerializer).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }

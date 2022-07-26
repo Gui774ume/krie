@@ -17,6 +17,8 @@ limitations under the License.
 package krie
 
 import (
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/Gui774ume/krie/pkg/krie/events"
@@ -24,13 +26,49 @@ import (
 
 // Options contains the parameters of KRIE
 type Options struct {
-	LogLevel     logrus.Level
-	Output       string
-	VMLinux      string
-	Events       events.EventTypeList
-	EventHandler func(data []byte) error
+	LogLevel LogLevel             `yaml:"log_level"`
+	Output   string               `yaml:"output"`
+	VMLinux  string               `yaml:"vm_linux"`
+	Events   events.EventTypeList `yaml:"events"`
+
+	// sysctl parameters
+	SysCtlParameters map[string]SysCtlParameter `yaml:"sys_ctl_parameters"`
+	SysCtlDefault    SysCtlParameter            `yaml:"sys_ctl_default"`
+
+	EventHandler func(data []byte) error `yaml:"-"`
 }
 
 func (o Options) IsValid() error {
+	return nil
+}
+
+// NewOptions returns a default set of options
+func NewOptions() *Options {
+	return &Options{
+		SysCtlParameters: make(map[string]SysCtlParameter),
+	}
+}
+
+// LogLevel is a wrapper around logrus.Level to unmarshal a log level from yaml
+type LogLevel logrus.Level
+
+// UnmarshalYAML parses a string representation of a logrus log level
+func (kll *LogLevel) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var level string
+	err := unmarshal(&level)
+	if err != nil {
+		return fmt.Errorf("failed to parse log level: %w", err)
+	}
+
+	var sanitized logrus.Level
+	if len(level) > 0 {
+		sanitized, err = logrus.ParseLevel(level)
+		if err != nil {
+			return err
+		}
+	} else {
+		sanitized = logrus.DebugLevel
+	}
+	*kll = LogLevel(sanitized)
 	return nil
 }

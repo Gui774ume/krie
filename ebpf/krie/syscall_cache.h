@@ -47,6 +47,7 @@ struct syscall_cache_t {
         struct {
             struct kprobe *p;
             u32 kprobe_type;
+            u8 write_enabled_file_bool;
         } kprobe;
     };
 };

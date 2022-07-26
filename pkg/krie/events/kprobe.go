@@ -92,6 +92,20 @@ func addKProbeProbes(all *[]*manager.Probe) {
 				EBPFFuncName: "kretprobe___unregister_kprobe_top",
 			},
 		},
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          KRIEUID,
+				EBPFSection:  "kprobe/write_enabled_file_bool",
+				EBPFFuncName: "kprobe_write_enabled_file_bool",
+			},
+		},
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          KRIEUID,
+				EBPFSection:  "kretprobe/write_enabled_file_bool",
+				EBPFFuncName: "kretprobe_write_enabled_file_bool",
+			},
+		},
 	}...)
 }
 
@@ -108,6 +122,8 @@ func addKProbeSelectors(all *[]manager.ProbesSelector) {
 		&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kretprobe/enable_kprobe", EBPFFuncName: "kretprobe_enable_kprobe"}},
 		&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kprobe/disable_kprobe", EBPFFuncName: "kprobe_disable_kprobe"}},
 		&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kretprobe/disable_kprobe", EBPFFuncName: "kretprobe_disable_kprobe"}},
+		&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kprobe/write_enabled_file_bool", EBPFFuncName: "kprobe_write_enabled_file_bool"}},
+		&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kretprobe/write_enabled_file_bool", EBPFFuncName: "kretprobe_write_enabled_file_bool"}},
 	)
 }
 

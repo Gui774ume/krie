@@ -17,7 +17,8 @@
 #define UNREGISTER_KRETPROBE 4
 #define ENABLE_KPROBE 5
 #define DISABLE_KPROBE 6
-#define DISARM_ALL_KPROBE 7
+#define DISARM_ALL_KPROBES 7
+#define ARM_ALL_KPROBES 8
 
 struct kprobe_event_t {
     struct kernel_event_t event;
@@ -231,6 +232,98 @@ int BPF_KPROBE(kprobe_unregister_kretprobe, struct kretprobe *rp) {
     };
 
     cache_syscall(&syscall);
+    return 0;
+}
+
+__attribute__((always_inline)) int parse_input(char buf[4], u8 *res) {
+	if (!buf)
+		return -EINVAL;
+
+	switch (buf[0]) {
+	case 'y':
+	case 'Y':
+	case '1':
+		*res = 1;
+		return 0;
+	case 'n':
+	case 'N':
+	case '0':
+		*res = 0;
+		return 0;
+	case 'o':
+	case 'O':
+		switch (buf[1]) {
+		case 'n':
+		case 'N':
+			*res = 1;
+			return 0;
+		case 'f':
+		case 'F':
+			*res = 0;
+			return 0;
+		default:
+			break;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return -EINVAL;
+}
+
+SEC("kprobe/write_enabled_file_bool")
+int BPF_KPROBE(kprobe_write_enabled_file_bool, struct file *file, char *user_buf) {
+    char buf[4] = {};
+    u8 enabled = 0;
+    bpf_probe_read_str(&buf, sizeof(buf), user_buf);
+
+    if (parse_input(buf, &enabled) != 0) {
+        // ignore this is a bogus request
+        return 0;
+    }
+
+    struct syscall_cache_t syscall = {
+        .type = EVENT_KPROBE,
+        .kprobe = {
+            .kprobe_type = KPROBE_TYPE,
+            .write_enabled_file_bool = enabled,
+        },
+    };
+
+    cache_syscall(&syscall);
+    return 0;
+}
+
+SEC("kretprobe/write_enabled_file_bool")
+int BPF_KPROBE(kretprobe_write_enabled_file_bool, int retval) {
+    struct syscall_cache_t *syscall = pop_syscall(EVENT_KPROBE);
+    if (!syscall) {
+        return 0;
+    }
+
+    struct kprobe_event_t *event = new_kprobe_event();
+    if (event == NULL) {
+        // ignore, should never happen
+        return 0;
+    }
+    event->event.retval = retval;
+    event->kprobe_type = syscall->kprobe.kprobe_type;
+    if (syscall->kprobe.write_enabled_file_bool) {
+        event->cmd = ARM_ALL_KPROBES;
+    } else {
+        event->cmd = DISARM_ALL_KPROBES;
+    }
+
+    fill_process_context(&event->process);
+
+    // filter event
+    if (filter_out(EVENT_KPROBE, &event)) {
+        return 0;
+    }
+
+    int perf_ret;
+    send_event_ptr(ctx, EVENT_KPROBE, event);
     return 0;
 }
 

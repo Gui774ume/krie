@@ -612,7 +612,8 @@ var (
 		"UNREGISTER_KRETPROBE": 4,
 		"ENABLE_KPROBE":        5,
 		"DISABLE_KPROBE":       6,
-		"DISARM_ALL_KPROBE":    7,
+		"DISARM_ALL_KPROBES":   7,
+		"ARM_ALL_KPROBES":      8,
 	}
 
 	KProbeTypeConstants = map[string]KProbeType{

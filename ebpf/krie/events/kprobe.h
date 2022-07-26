@@ -81,6 +81,11 @@ int BPF_KRETPROBE(kretprobe_register_kprobe, int retval) {
 
     fill_process_context(&event->process);
 
+    // filter event
+    if (filter_out(EVENT_KPROBE, &event)) {
+        return 0;
+    }
+
     int perf_ret;
     send_event_ptr(ctx, EVENT_KPROBE, event);
     return 0;
@@ -114,6 +119,11 @@ int BPF_KRETPROBE(kretprobe___unregister_kprobe_top, int retval) {
     bpf_probe_read_str(&event->symbol, sizeof(event->symbol), symbol);
 
     fill_process_context(&event->process);
+
+    // filter event
+    if (filter_out(EVENT_KPROBE, &event)) {
+        return 0;
+    }
 
     int perf_ret;
     send_event_ptr(ctx, EVENT_KPROBE, event);
@@ -149,6 +159,11 @@ int BPF_KRETPROBE(kretprobe_enable_kprobe, int retval) {
 
     fill_process_context(&event->process);
 
+    // filter event
+    if (filter_out(EVENT_KPROBE, &event)) {
+        return 0;
+    }
+
     int perf_ret;
     send_event_ptr(ctx, EVENT_KPROBE, event);
     return 0;
@@ -182,6 +197,11 @@ int BPF_KRETPROBE(kretprobe_disable_kprobe, int retval) {
     bpf_probe_read_str(&event->symbol, sizeof(event->symbol), symbol);
 
     fill_process_context(&event->process);
+
+    // filter event
+    if (filter_out(EVENT_KPROBE, &event)) {
+        return 0;
+    }
 
     int perf_ret;
     send_event_ptr(ctx, EVENT_KPROBE, event);

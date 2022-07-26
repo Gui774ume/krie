@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/DataDog/gopsutil/cpu"
@@ -77,4 +78,16 @@ outer:
 	}
 
 	return bytes.NewReader(btfBuffer.Bytes()), nil
+}
+
+// Getpid returns the current process ID in the host namespace
+func Getpid() int32 {
+	// try to prevent pid namespace shenanigans (hoping the host /proc is mounted at /proc)
+	p, err := os.Readlink("/proc/self")
+	if err == nil {
+		if pid, err := strconv.ParseInt(p, 10, 32); err == nil {
+			return int32(pid)
+		}
+	}
+	return int32(os.Getpid())
 }

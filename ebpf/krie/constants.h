@@ -31,4 +31,10 @@ u64 __attribute__((always_inline)) get_check_helper_call_input(void) {
     return input;
 }
 
+u64 __attribute__((always_inline)) get_krie_pid(void) {
+    u64 krie_pid;
+    LOAD_CONSTANT("krie_pid", krie_pid);
+    return krie_pid;
+}
+
 #endif

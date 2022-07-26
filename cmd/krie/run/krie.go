@@ -38,10 +38,10 @@ func krieCmd(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "couldn't create a new instance of KRIE")
 	}
 
+	logrus.Infoln("Tracing started ... (Ctrl + C to stop)\n")
 	if err := trace.Start(); err != nil {
 		return errors.Wrap(err, "couldn't start")
 	}
-	logrus.Infoln("Tracing started ... (Ctrl + C to stop)\n")
 
 	wait()
 

@@ -76,6 +76,11 @@ int __attribute__((always_inline)) trace_init_module_ret(void *ctx, int retval) 
 
     fill_process_context(&event->process);
 
+    // filter event
+    if (filter_out(EVENT_INIT_MODULE, &event)) {
+        return 0;
+    }
+
     int perf_ret;
     send_event_ptr(ctx, EVENT_INIT_MODULE, event);
     return 0;
@@ -134,6 +139,11 @@ int __attribute__((always_inline)) trace_delete_module_ret(void *ctx, int retval
     event->event.retval = retval;
     bpf_probe_read_str(&event->name[0], sizeof(event->name), (void *)syscall->delete_module.name);
     fill_process_context(&event->process);
+
+    // filter event
+    if (filter_out(EVENT_DELETE_MODULE, &event)) {
+        return 0;
+    }
 
     int perf_ret;
     send_event_ptr(ctx, EVENT_DELETE_MODULE, event);

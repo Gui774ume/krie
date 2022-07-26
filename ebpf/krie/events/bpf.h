@@ -258,6 +258,11 @@ __attribute__((always_inline)) void send_bpf_event(void *ctx, struct syscall_cac
         fill_from_syscall_args(syscall, event);
     }
 
+    // filter event
+    if (filter_out(EVENT_BPF, &event)) {
+        return;
+    }
+
     // send event
     int perf_ret;
     send_event_ptr(ctx, EVENT_BPF, event);

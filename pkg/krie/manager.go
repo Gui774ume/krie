@@ -127,6 +127,10 @@ func (e *KRIE) prepareManager() {
 				Name:  "check_helper_call_input",
 				Value: events.GetCheckHelperCallInputType(),
 			},
+			{
+				Name:  "krie_pid",
+				Value: uint64(Getpid()),
+			},
 		},
 		ActivatedProbes: events.AllProbesSelectors(e.options.Events),
 	}

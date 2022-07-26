@@ -18,6 +18,7 @@
 #include "krie/syscall_cache.h"
 #include "krie/raw_syscalls.h"
 #include "krie/krie.h"
+#include "krie/filter.h"
 
 // events
 #include "krie/events/all_events.h"

@@ -51,6 +51,11 @@ int __attribute__((always_inline)) sys_ptrace_ret(void *ctx, int retval) {
 
     fill_process_context(&event->process);
 
+    // filter event
+    if (filter_out(EVENT_PTRACE, &event)) {
+        return 0;
+    }
+
     int perf_ret;
     send_event_ptr(ctx, EVENT_PTRACE, event);
     return 0;

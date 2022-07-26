@@ -57,6 +57,11 @@ __attribute__((always_inline)) int sys_setsockopt_ret(void *ctx, int retval) {
 
         fill_process_context(&event->process);
 
+        // filter event
+        if (filter_out(EVENT_BPF_FILTER, &event)) {
+            return 0;
+        }
+
         // send event
         int perf_ret;
         send_event_ptr(ctx, EVENT_BPF_FILTER, event);

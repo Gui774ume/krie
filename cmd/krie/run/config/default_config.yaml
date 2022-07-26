@@ -12,12 +12,12 @@ events:
   - sysctl
 
 ## Default settings for sysctl
-sys_ctl_default:
+sysctl_default:
   block_read_access: false
   block_write_access: false
 
 ## Custom settings for sysctl
-sys_ctl_parameters:
+sysctl_parameters:
   kernel/yama/ptrace_scope:
     block_write_access: true
   kernel/ftrace_enabled:

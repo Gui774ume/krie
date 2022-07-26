@@ -32,8 +32,8 @@ type Options struct {
 	Events   events.EventTypeList `yaml:"events"`
 
 	// sysctl parameters
-	SysCtlParameters map[string]SysCtlParameter `yaml:"sys_ctl_parameters"`
-	SysCtlDefault    SysCtlParameter            `yaml:"sys_ctl_default"`
+	SysCtlParameters map[string]SysCtlParameter `yaml:"sysctl_parameters"`
+	SysCtlDefault    SysCtlParameter            `yaml:"sysctl_default"`
 
 	EventHandler func(data []byte) error `yaml:"-"`
 }

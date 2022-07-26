@@ -20,6 +20,7 @@ package events
 
 import (
 	"fmt"
+	"strings"
 
 	manager "github.com/DataDog/ebpf-manager"
 	"github.com/mailru/easyjson/jwriter"
@@ -75,8 +76,70 @@ func (t EventType) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%s\"", t.String())), nil
 }
 
+var eventTypeStrings = map[string]EventType{}
+
+func init() {
+	for i := EventType(0); i < MaxEventType; i++ {
+		eventTypeStrings[i.String()] = i
+	}
+}
+
+// ParseEventType returns an event type from its string representation
+func ParseEventType(input string) EventType {
+	return eventTypeStrings[input]
+}
+
+// EventTypeList is a list of EventType
+type EventTypeList []EventType
+
+func (etl EventTypeList) String() string {
+	switch len(etl) {
+	case 0:
+		return ""
+	case 1:
+		return etl[0].String()
+	}
+	n := len(etl) - 1
+	for i := 0; i < len(etl); i++ {
+		n += len(etl[i].String())
+	}
+
+	var b strings.Builder
+	b.Grow(n)
+	b.WriteString(etl[0].String())
+	for _, s := range etl[1:] {
+		b.WriteString(",")
+		b.WriteString(s.String())
+	}
+	return b.String()
+}
+
+// Insert inserts an event type in a list of event type
+func (etl *EventTypeList) Insert(et EventType) {
+	for _, elem := range *etl {
+		if et == elem {
+			return
+		}
+	}
+	*etl = append(*etl, et)
+}
+
+// Contains return true if the list of event types is empty or if it contains the provided event type
+func (etl *EventTypeList) Contains(et EventType) bool {
+	if len(*etl) == 0 {
+		return true
+	}
+
+	for _, elem := range *etl {
+		if elem == et {
+			return true
+		}
+	}
+	return false
+}
+
 // AllProbesSelectors returns all the probes selectors
-func AllProbesSelectors() []manager.ProbesSelector {
+func AllProbesSelectors(events EventTypeList) []manager.ProbesSelector {
 	all := []manager.ProbesSelector{
 		&manager.AllOf{
 			Selectors: []manager.ProbesSelector{
@@ -84,16 +147,24 @@ func AllProbesSelectors() []manager.ProbesSelector {
 			},
 		},
 	}
-	addAllKernelModuleProbesSelectors(&all)
-	addBPFProbesSelectors(&all)
-	addSetSockOptSelectors(&all)
-	addPTraceSelectors(&all)
-	addKProbeSelectors(&all)
+	addAllKernelModuleProbesSelectors(&all, events)
+	if events.Contains(BPFEventType) {
+		addBPFProbesSelectors(&all)
+	}
+	if events.Contains(BPFFilterEventType) {
+		addSetSockOptSelectors(&all)
+	}
+	if events.Contains(PTraceEventType) {
+		addPTraceSelectors(&all)
+	}
+	if events.Contains(KProbeEventType) {
+		addKProbeSelectors(&all)
+	}
 	return all
 }
 
 // AllProbes returns all the probes
-func AllProbes() []*manager.Probe {
+func AllProbes(events EventTypeList) []*manager.Probe {
 	all := []*manager.Probe{
 		{
 			ProbeIdentificationPair: manager.ProbeIdentificationPair{
@@ -103,23 +174,40 @@ func AllProbes() []*manager.Probe {
 			},
 		},
 	}
-	addKernelModuleProbes(&all)
-	addBPFProbes(&all)
-	addSetSockOptProbes(&all)
-	addPTraceProbes(&all)
-	addKProbeProbes(&all)
+	addKernelModuleProbes(&all, events)
+	if events.Contains(BPFEventType) {
+		addBPFProbes(&all)
+	}
+	if events.Contains(BPFFilterEventType) {
+		addSetSockOptProbes(&all)
+	}
+	if events.Contains(PTraceEventType) {
+		addPTraceProbes(&all)
+	}
+	if events.Contains(KProbeEventType) {
+		addKProbeProbes(&all)
+	}
 
 	return all
 }
 
 // AllTailCallRoutes returns all the tail call routes
-func AllTailCallRoutes() []manager.TailCallRoute {
+func AllTailCallRoutes(events EventTypeList) []manager.TailCallRoute {
 	var all []manager.TailCallRoute
-	addKernelModuleTailCallRoutes(&all)
-	addBPFTailCallRoutes(&all)
-	addSetSockOptRoutes(&all)
-	addPTraceRoutes(&all)
-	addKProbeRoutes(&all)
+
+	addKernelModuleTailCallRoutes(&all, events)
+	if events.Contains(BPFEventType) {
+		addBPFTailCallRoutes(&all)
+	}
+	if events.Contains(BPFFilterEventType) {
+		addSetSockOptRoutes(&all)
+	}
+	if events.Contains(PTraceEventType) {
+		addPTraceRoutes(&all)
+	}
+	if events.Contains(KProbeEventType) {
+		addKProbeRoutes(&all)
+	}
 	return all
 }
 

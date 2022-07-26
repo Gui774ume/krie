@@ -18,6 +18,8 @@ package krie
 
 import (
 	"github.com/sirupsen/logrus"
+
+	"github.com/Gui774ume/krie/pkg/krie/events"
 )
 
 // Options contains the parameters of KRIE
@@ -25,6 +27,7 @@ type Options struct {
 	LogLevel     logrus.Level
 	Output       string
 	VMLinux      string
+	Events       events.EventTypeList
 	EventHandler func(data []byte) error
 }
 

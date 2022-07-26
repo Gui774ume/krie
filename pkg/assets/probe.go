@@ -5,7 +5,6 @@
 
 package assets
 
-
 import (
 	"bytes"
 	"compress/gzip"
@@ -37,7 +36,6 @@ func bindataRead(data []byte, name string) ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
-
 
 type asset struct {
 	bytes []byte
@@ -88,8 +86,6 @@ func bindataProbeOBytes() ([]byte, error) {
 	)
 }
 
-
-
 func bindataProbeO() (*asset, error) {
 	bytes, err := bindataProbeOBytes()
 	if err != nil {
@@ -97,11 +93,11 @@ func bindataProbeO() (*asset, error) {
 	}
 
 	info := bindataFileInfo{
-		name: "/probe.o",
-		size: 1819376,
+		name:        "/probe.o",
+		size:        1819376,
 		md5checksum: "",
-		mode: os.FileMode(432),
-		modTime: time.Unix(1658765665, 0),
+		mode:        os.FileMode(432),
+		modTime:     time.Unix(1658823654, 0),
 	}
 
 	a := &asset{bytes: bytes, info: info}
@@ -118,8 +114,6 @@ func bindataProbesyscallwrapperOBytes() ([]byte, error) {
 	)
 }
 
-
-
 func bindataProbesyscallwrapperO() (*asset, error) {
 	bytes, err := bindataProbesyscallwrapperOBytes()
 	if err != nil {
@@ -127,18 +121,17 @@ func bindataProbesyscallwrapperO() (*asset, error) {
 	}
 
 	info := bindataFileInfo{
-		name: "/probe_syscall_wrapper.o",
-		size: 1822888,
+		name:        "/probe_syscall_wrapper.o",
+		size:        1822888,
 		md5checksum: "",
-		mode: os.FileMode(432),
-		modTime: time.Unix(1658765667, 0),
+		mode:        os.FileMode(432),
+		modTime:     time.Unix(1658823655, 0),
 	}
 
 	a := &asset{bytes: bytes, info: info}
 
 	return a, nil
 }
-
 
 //
 // Asset loads and returns the asset for the given name.
@@ -231,18 +224,18 @@ func AssetDir(name string) ([]string, error) {
 			node = node.Children[p]
 			if node == nil {
 				return nil, &os.PathError{
-					Op: "open",
+					Op:   "open",
 					Path: name,
-					Err: os.ErrNotExist,
+					Err:  os.ErrNotExist,
 				}
 			}
 		}
 	}
 	if node.Func != nil {
 		return nil, &os.PathError{
-			Op: "open",
+			Op:   "open",
 			Path: name,
-			Err: os.ErrNotExist,
+			Err:  os.ErrNotExist,
 		}
 	}
 	rv := make([]string, 0, len(node.Children))
@@ -252,7 +245,6 @@ func AssetDir(name string) ([]string, error) {
 	return rv, nil
 }
 
-
 type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
@@ -260,7 +252,7 @@ type bintree struct {
 
 var _bintree = &bintree{Func: nil, Children: map[string]*bintree{
 	"": {Func: nil, Children: map[string]*bintree{
-		"probe.o": {Func: bindataProbeO, Children: map[string]*bintree{}},
+		"probe.o":                 {Func: bindataProbeO, Children: map[string]*bintree{}},
 		"probe_syscall_wrapper.o": {Func: bindataProbesyscallwrapperO, Children: map[string]*bintree{}},
 	}},
 }}

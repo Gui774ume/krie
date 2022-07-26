@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Gui774ume/krie/pkg/krie"
+	"github.com/Gui774ume/krie/pkg/krie/events"
 )
 
 // CLIOptions are the command line options of ssh-probe
@@ -39,7 +40,7 @@ type KRIEOptionsSanitizer struct {
 
 // NewKRIEOptionsSanitizer creates a new instance of KRIEOptionsSanitizer
 func NewKRIEOptionsSanitizer(options *krie.Options, field string) *KRIEOptionsSanitizer {
-	// set default values here
+	// set default values
 	options.LogLevel = logrus.InfoLevel
 
 	return &KRIEOptionsSanitizer{
@@ -56,6 +57,8 @@ func (kos *KRIEOptionsSanitizer) String() string {
 		return kos.options.Output
 	case "vmlinux":
 		return kos.options.VMLinux
+	case "event":
+		return kos.options.Events.String()
 	default:
 		return ""
 	}
@@ -83,6 +86,14 @@ func (kos *KRIEOptionsSanitizer) Set(val string) error {
 		}
 		kos.options.VMLinux = val
 		return nil
+	case "event":
+		// check if the provided event type exists
+		et := events.ParseEventType(val)
+		if et == events.UnknownEventType {
+			return fmt.Errorf("unknown event type: %s", val)
+		}
+		kos.options.Events.Insert(et)
+		return nil
 	default:
 		return nil
 	}
@@ -96,6 +107,8 @@ func (kos *KRIEOptionsSanitizer) Type() string {
 		return "string"
 	case "vmlinux":
 		return "string"
+	case "event":
+		return "repeated string"
 	default:
 		return ""
 	}

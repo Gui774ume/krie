@@ -116,7 +116,7 @@ func (e *KRIE) prepareManager() {
 			Max: math.MaxUint64,
 		},
 
-		TailCallRouter: events.AllTailCallRoutes(),
+		TailCallRouter: events.AllTailCallRoutes(e.options.Events),
 
 		ConstantEditors: []manager.ConstantEditor{
 			{
@@ -128,10 +128,10 @@ func (e *KRIE) prepareManager() {
 				Value: events.GetCheckHelperCallInputType(),
 			},
 		},
-		ActivatedProbes: events.AllProbesSelectors(),
+		ActivatedProbes: events.AllProbesSelectors(e.options.Events),
 	}
 	e.manager = &manager.Manager{
-		Probes: events.AllProbes(),
+		Probes: events.AllProbes(e.options.Events),
 		PerfMaps: []*manager.PerfMap{
 			{
 				Map: manager.Map{Name: "events"},

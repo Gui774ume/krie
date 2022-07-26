@@ -45,4 +45,9 @@ func init() {
 		NewKRIEOptionsSanitizer(&options.KRIEOptions, "vmlinux"),
 		"vmlinux",
 		"BTF information for the current kernel in .tar.xz format (required only if KRIE isn't able to locate it by itself)")
+
+	KRIE.Flags().Var(
+		NewKRIEOptionsSanitizer(&options.KRIEOptions, "event"),
+		"event",
+		"List of events to activate (empty means everything)")
 }

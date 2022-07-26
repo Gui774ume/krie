@@ -28,86 +28,103 @@ import (
 // ModuleNameLen is the length of the name of a kernel module
 const ModuleNameLen = 56
 
-func addKernelModuleProbes(all *[]*manager.Probe) {
+func addKernelModuleProbes(all *[]*manager.Probe, events EventTypeList) {
 	// init_module
-	*all = append(*all, []*manager.Probe{
-		{
-			ProbeIdentificationPair: manager.ProbeIdentificationPair{
-				UID:          KRIEUID,
-				EBPFSection:  "kprobe/do_init_module",
-				EBPFFuncName: "kprobe_do_init_module",
+	if events.Contains(InitModuleEventType) {
+		*all = append(*all, []*manager.Probe{
+			{
+				ProbeIdentificationPair: manager.ProbeIdentificationPair{
+					UID:          KRIEUID,
+					EBPFSection:  "kprobe/do_init_module",
+					EBPFFuncName: "kprobe_do_init_module",
+				},
 			},
-		},
-		{
-			ProbeIdentificationPair: manager.ProbeIdentificationPair{
-				UID:          KRIEUID,
-				EBPFSection:  "kprobe/module_put",
-				EBPFFuncName: "kprobe_module_put",
+			{
+				ProbeIdentificationPair: manager.ProbeIdentificationPair{
+					UID:          KRIEUID,
+					EBPFSection:  "kprobe/module_put",
+					EBPFFuncName: "kprobe_module_put",
+				},
 			},
-		},
-	}...)
-	*all = append(*all, ExpandSyscallProbes(&manager.Probe{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID: KRIEUID,
-		},
-		SyscallFuncName: "init_module",
-	}, EntryAndExit)...)
-	*all = append(*all, ExpandSyscallProbes(&manager.Probe{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID: KRIEUID,
-		},
-		SyscallFuncName: "finit_module",
-	}, EntryAndExit)...)
+		}...)
+		*all = append(*all, ExpandSyscallProbes(&manager.Probe{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID: KRIEUID,
+			},
+			SyscallFuncName: "init_module",
+		}, EntryAndExit)...)
+		*all = append(*all, ExpandSyscallProbes(&manager.Probe{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID: KRIEUID,
+			},
+			SyscallFuncName: "finit_module",
+		}, EntryAndExit)...)
+	}
 
 	// delete_module
-	*all = append(*all, ExpandSyscallProbes(&manager.Probe{
-		ProbeIdentificationPair: manager.ProbeIdentificationPair{
-			UID: KRIEUID,
-		},
-		SyscallFuncName: "delete_module",
-	}, EntryAndExit)...)
+	if events.Contains(DeleteModuleEventType) {
+		*all = append(*all, ExpandSyscallProbes(&manager.Probe{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID: KRIEUID,
+			},
+			SyscallFuncName: "delete_module",
+		}, EntryAndExit)...)
+	}
 }
 
-func addKernelModuleTailCallRoutes(all *[]manager.TailCallRoute) {
-	*all = append(*all, []manager.TailCallRoute{
-		// init_module
-		{
-			ProgArrayName: "sys_exit_progs",
-			Key:           uint32(InitModuleEventType),
-			ProbeIdentificationPair: manager.ProbeIdentificationPair{
-				EBPFSection:  "tracepoint/handle_sys_init_module_exit",
-				EBPFFuncName: "tracepoint_handle_sys_init_module_exit",
+func addKernelModuleTailCallRoutes(all *[]manager.TailCallRoute, events EventTypeList) {
+	// init_module
+	if events.Contains(InitModuleEventType) {
+		*all = append(*all, []manager.TailCallRoute{
+			{
+				ProgArrayName: "sys_exit_progs",
+				Key:           uint32(InitModuleEventType),
+				ProbeIdentificationPair: manager.ProbeIdentificationPair{
+					EBPFSection:  "tracepoint/handle_sys_init_module_exit",
+					EBPFFuncName: "tracepoint_handle_sys_init_module_exit",
+				},
 			},
-		},
-		// delete_module
-		{
-			ProgArrayName: "sys_exit_progs",
-			Key:           uint32(DeleteModuleEventType),
-			ProbeIdentificationPair: manager.ProbeIdentificationPair{
-				EBPFSection:  "tracepoint/handle_sys_delete_module_exit",
-				EBPFFuncName: "tracepoint_handle_sys_delete_module_exit",
+		}...)
+	}
+
+	// delete_module
+	if events.Contains(DeleteModuleEventType) {
+		*all = append(*all, []manager.TailCallRoute{
+			{
+				ProgArrayName: "sys_exit_progs",
+				Key:           uint32(DeleteModuleEventType),
+				ProbeIdentificationPair: manager.ProbeIdentificationPair{
+					EBPFSection:  "tracepoint/handle_sys_delete_module_exit",
+					EBPFFuncName: "tracepoint_handle_sys_delete_module_exit",
+				},
 			},
-		},
-	}...)
+		}...)
+	}
 }
 
-func addAllKernelModuleProbesSelectors(all *[]manager.ProbesSelector) {
-	*all = append(*all,
-		// init_module
-		&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kprobe/module_put", EBPFFuncName: "kprobe_module_put"}},
-		&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kprobe/do_init_module", EBPFFuncName: "kprobe_do_init_module"}},
-		&manager.OneOf{Selectors: ExpandSyscallProbesSelector(
-			manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "init_module"}, EntryAndExit),
-		},
-		&manager.OneOf{Selectors: ExpandSyscallProbesSelector(
-			manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "finit_module"}, EntryAndExit),
-		},
+func addAllKernelModuleProbesSelectors(all *[]manager.ProbesSelector, events EventTypeList) {
+	// init_module
+	if events.Contains(InitModuleEventType) {
+		*all = append(*all,
+			&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kprobe/module_put", EBPFFuncName: "kprobe_module_put"}},
+			&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kprobe/do_init_module", EBPFFuncName: "kprobe_do_init_module"}},
+			&manager.OneOf{Selectors: ExpandSyscallProbesSelector(
+				manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "init_module"}, EntryAndExit),
+			},
+			&manager.OneOf{Selectors: ExpandSyscallProbesSelector(
+				manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "finit_module"}, EntryAndExit),
+			},
+		)
+	}
 
-		// delete_module
-		&manager.OneOf{Selectors: ExpandSyscallProbesSelector(
-			manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "delete_module"}, EntryAndExit),
-		},
-	)
+	// delete_module
+	if events.Contains(DeleteModuleEventType) {
+		*all = append(*all,
+			&manager.OneOf{Selectors: ExpandSyscallProbesSelector(
+				manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "delete_module"}, EntryAndExit),
+			},
+		)
+	}
 }
 
 // InitModuleEvent is used to parse an init_module event

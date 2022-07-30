@@ -34,6 +34,13 @@ func addSysCtlProbes(all *[]*manager.Probe) {
 			},
 			CGroupPath: "/sys/fs/cgroup/unified",
 		},
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          KRIEUID,
+				EBPFSection:  "kprobe/proc_sys_call_handler",
+				EBPFFuncName: "kprobe_proc_sys_call_handler",
+			},
+		},
 	}...)
 }
 
@@ -44,6 +51,7 @@ func addSysCtlRoutes(all *[]manager.TailCallRoute) {
 func addSysCtlSelectors(all *[]manager.ProbesSelector) {
 	*all = append(*all,
 		&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "cgroup/sysctl", EBPFFuncName: "cgroup_sysctl"}},
+		&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kprobe/proc_sys_call_handler", EBPFFuncName: "kprobe_proc_sys_call_handler"}},
 	)
 }
 
@@ -109,5 +117,40 @@ type SysCtlEventEventSerializer struct {
 func NewSysCtlEventSerializer(e *SysCtlEvent) *SysCtlEventEventSerializer {
 	return &SysCtlEventEventSerializer{
 		SysCtlEvent: e,
+	}
+}
+
+type SysCtlParameter struct {
+	BlockWriteAccess       bool   `yaml:"block_write_access"`
+	BlockReadAccess        bool   `yaml:"block_read_access"`
+	OverrideInputValueWith string `yaml:"override_input_value_with"`
+}
+
+// MarshalBinary returns a binary representation of itself
+func (scp SysCtlParameter) MarshalBinary() ([]byte, error) {
+	b := make([]byte, 264)
+	ByteOrder.PutUint32(b[0:4], uint32(len(scp.OverrideInputValueWith)))
+	if scp.BlockWriteAccess {
+		ByteOrder.PutUint16(b[4:6], 1)
+	}
+	if scp.BlockReadAccess {
+		ByteOrder.PutUint16(b[6:8], 1)
+	}
+	if len(scp.OverrideInputValueWith) > 0 {
+		copy(b[8:264], scp.OverrideInputValueWith)
+	}
+	return b, nil
+}
+
+type SysCtlOptions struct {
+	Action  Action                     `yaml:"action"`
+	Default SysCtlParameter            `yaml:"default"`
+	List    map[string]SysCtlParameter `yaml:"list"`
+}
+
+// NewSysCtlOptions returns a new instance of SysCtlOptions
+func NewSysCtlOptions() *SysCtlOptions {
+	return &SysCtlOptions{
+		List: make(map[string]SysCtlParameter),
 	}
 }

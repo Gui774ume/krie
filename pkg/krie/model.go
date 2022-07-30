@@ -20,22 +20,20 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 
 	"github.com/Gui774ume/krie/pkg/krie/events"
 )
 
 // Options contains the parameters of KRIE
 type Options struct {
-	LogLevel LogLevel             `yaml:"log_level"`
-	Output   string               `yaml:"output"`
-	VMLinux  string               `yaml:"vm_linux"`
-	Events   events.EventTypeList `yaml:"events"`
-
-	// sysctl parameters
-	SysCtlParameters map[string]SysCtlParameter `yaml:"sysctl_parameters"`
-	SysCtlDefault    SysCtlParameter            `yaml:"sysctl_default"`
+	LogLevel LogLevel `yaml:"log_level"`
+	Output   string   `yaml:"output"`
+	VMLinux  string   `yaml:"vm_linux"`
 
 	EventHandler func(data []byte) error `yaml:"-"`
+
+	Events *events.Options `yaml:"events"`
 }
 
 func (o Options) IsValid() error {
@@ -45,7 +43,7 @@ func (o Options) IsValid() error {
 // NewOptions returns a default set of options
 func NewOptions() *Options {
 	return &Options{
-		SysCtlParameters: make(map[string]SysCtlParameter),
+		Events: events.NewEventsOptions(),
 	}
 }
 
@@ -53,9 +51,9 @@ func NewOptions() *Options {
 type LogLevel logrus.Level
 
 // UnmarshalYAML parses a string representation of a logrus log level
-func (kll *LogLevel) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (kll *LogLevel) UnmarshalYAML(value *yaml.Node) error {
 	var level string
-	err := unmarshal(&level)
+	err := value.Decode(&level)
 	if err != nil {
 		return fmt.Errorf("failed to parse log level: %w", err)
 	}

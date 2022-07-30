@@ -24,12 +24,68 @@ import (
 
 	manager "github.com/DataDog/ebpf-manager"
 	"github.com/mailru/easyjson/jwriter"
+	"golang.org/x/sys/unix"
+	"gopkg.in/yaml.v3"
 )
 
 const (
 	// KRIEUID is the UID used to uniquely identify kernel space programs
 	KRIEUID = "krie"
 )
+
+// Options stores the options for each event type
+type Options struct {
+	InitModuleEvent         Action         `yaml:"init_module"`
+	DeleteModuleEvent       Action         `yaml:"delete_module"`
+	BPFEvent                Action         `yaml:"bpf"`
+	BPFFilterEvent          Action         `yaml:"bpf_filter"`
+	PTraceEvent             Action         `yaml:"ptrace"`
+	KProbeEvent             Action         `yaml:"kprobe"`
+	SysCtlEvent             *SysCtlOptions `yaml:"sysctl"`
+	HookedSyscallTableEvent Action         `yaml:"hooked_syscall_table"`
+	HookedSyscallEvent      Action         `yaml:"hooked_syscall"`
+
+	eventsAction    map[EventType]Action `yaml:"-"`
+	activatedEvents EventTypeList        `yaml:"-"`
+}
+
+func (o *Options) ParseEventsActions() map[EventType]Action {
+	if len(o.eventsAction) == 0 {
+		for eventType, action := range map[EventType]Action{
+			InitModuleEventType:         o.InitModuleEvent,
+			DeleteModuleEventType:       o.DeleteModuleEvent,
+			BPFEventType:                o.BPFEvent,
+			BPFFilterEventType:          o.BPFFilterEvent,
+			PTraceEventType:             o.PTraceEvent,
+			KProbeEventType:             o.KProbeEvent,
+			SysCtlEventType:             o.SysCtlEvent.Action,
+			HookedSyscallTableEventType: o.HookedSyscallTableEvent,
+			HookedSyscallEventType:      o.HookedSyscallEvent,
+		} {
+			o.eventsAction[eventType] = action
+		}
+	}
+	return o.eventsAction
+}
+
+func (o *Options) ActivatedEventTypes() EventTypeList {
+	if len(o.activatedEvents) == 0 {
+		for eventType, action := range o.ParseEventsActions() {
+			if action >= LogAction {
+				o.activatedEvents = append(o.activatedEvents, eventType)
+			}
+		}
+	}
+	return o.activatedEvents
+}
+
+// NewEventsOptions returns a new initialized instance of EventsOptions
+func NewEventsOptions() *Options {
+	return &Options{
+		eventsAction: make(map[EventType]Action),
+		SysCtlEvent:  NewSysCtlOptions(),
+	}
+}
 
 // EventType describes the type of an event sent from the kernel
 type EventType uint32
@@ -49,8 +105,14 @@ const (
 	PTraceEventType
 	// KProbeEventType is the event type of a kprobe event
 	KProbeEventType
-	// SysCtlEventType  is the event type of a sysctl event
+	// SysCtlEventType is the event type of a sysctl event
 	SysCtlEventType
+	// HookedSyscallTableEventType is the event type of a hooked_syscall_table event
+	HookedSyscallTableEventType
+	// HookedSyscallEventType is the event type of a hooked_syscall event
+	HookedSyscallEventType
+	// EventCheckEventType is the event type of an event_check event
+	EventCheckEventType
 	// MaxEventType is used internally to get the maximum number of events.
 	MaxEventType
 )
@@ -64,13 +126,19 @@ func (t EventType) String() string {
 	case BPFEventType:
 		return "bpf"
 	case BPFFilterEventType:
-		return "bpf_event"
+		return "bpf_filter"
 	case PTraceEventType:
 		return "ptrace"
 	case KProbeEventType:
 		return "kprobe"
 	case SysCtlEventType:
 		return "sysctl"
+	case HookedSyscallTableEventType:
+		return "hooked_syscall_table"
+	case HookedSyscallEventType:
+		return "hooked_syscall"
+	case EventCheckEventType:
+		return "event_check"
 	default:
 		return fmt.Sprintf("EventType(%d)", t)
 	}
@@ -112,7 +180,7 @@ func (etl EventTypeList) String() string {
 	b.Grow(n)
 	b.WriteString(etl[0].String())
 	for _, s := range etl[1:] {
-		b.WriteString(",")
+		b.WriteString(", ")
 		b.WriteString(s.String())
 	}
 	return b.String()
@@ -143,9 +211,9 @@ func (etl *EventTypeList) Contains(et EventType) bool {
 }
 
 // UnmarshalYAML parses a string representation of a list of event types
-func (etl *EventTypeList) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (etl *EventTypeList) UnmarshalYAML(value *yaml.Node) error {
 	var eventTypes []string
-	err := unmarshal(&eventTypes)
+	err := value.Decode(&eventTypes)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal the list of event types: %w", err)
 	}
@@ -167,6 +235,8 @@ func AllProbesSelectors(events EventTypeList) []manager.ProbesSelector {
 		&manager.AllOf{
 			Selectors: []manager.ProbesSelector{
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "tracepoint/raw_syscalls/sys_exit", EBPFFuncName: "sys_exit"}},
+				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "tracepoint/raw_syscalls/sys_enter", EBPFFuncName: "sys_enter"}},
+				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "perf_event/cpu_clock", EBPFFuncName: "perf_event_cpu_clock"}},
 			},
 		},
 	}
@@ -198,6 +268,23 @@ func AllProbes(events EventTypeList) []*manager.Probe {
 				EBPFSection:  "tracepoint/raw_syscalls/sys_exit",
 				EBPFFuncName: "sys_exit",
 			},
+		},
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          KRIEUID,
+				EBPFSection:  "tracepoint/raw_syscalls/sys_enter",
+				EBPFFuncName: "sys_enter",
+			},
+		},
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          KRIEUID,
+				EBPFSection:  "perf_event/cpu_clock",
+				EBPFFuncName: "perf_event_cpu_clock",
+			},
+			SampleFrequency: 1,
+			PerfEventType:   unix.PERF_TYPE_SOFTWARE,
+			PerfEventConfig: unix.PERF_COUNT_SW_CPU_CLOCK,
 		},
 	}
 	addKernelModuleProbes(&all, events)
@@ -248,6 +335,7 @@ type Event struct {
 	Kernel  KernelEvent
 	Process ProcessContext
 
+	// audit events
 	InitModule     InitModuleEvent
 	DeleteModule   DeleteModuleEvent
 	BPFEvent       BPFEvent
@@ -255,6 +343,10 @@ type Event struct {
 	PTraceEvent    PTraceEvent
 	KProbeEvent    KProbeEvent
 	SysCtlEvent    SysCtlEvent
+
+	// krie events
+	HookedSyscallEvent HookedSyscallEvent
+	EventCheckEvent    EventCheckEvent
 }
 
 // NewEvent returns a new Event instance
@@ -285,20 +377,27 @@ type EventSerializer struct {
 	*KernelEventSerializer    `json:"event,omitempty"`
 	*ProcessContextSerializer `json:"process,omitempty"`
 
+	// audit events
 	*InitModuleEventSerializer   `json:"init_module,omitempty"`
 	*DeleteModuleEventSerializer `json:"delete_module,omitempty"`
 	*BPFEventSerializer          `json:"bpf,omitempty"`
 	*BPFFilterEventSerializer    `json:"bpf_filter,omitempty"`
 	*PtraceEventSerializer       `json:"ptrace,omitempty"`
 	*KProbeEventSerializer       `json:"kprobe,omitempty"`
-	*SysCtlEventEventSerializer  `json:"sysctl,omitempty""`
+	*SysCtlEventEventSerializer  `json:"sysctl,omitempty"`
+
+	// krie events
+	*HookedSyscallEventSerializer `json:"hooked_syscall,omitempty"`
+	*EventCheckEventSerializer    `json:"event_check,omitempty"`
 }
 
 // NewEventSerializer returns a new EventSerializer instance for the provided Event
 func NewEventSerializer(event *Event) *EventSerializer {
 	serializer := &EventSerializer{
-		KernelEventSerializer:    NewKernelEventSerializer(&event.Kernel),
-		ProcessContextSerializer: NewProcessContextSerializer(&event.Process),
+		KernelEventSerializer: NewKernelEventSerializer(&event.Kernel),
+	}
+	if event.Kernel.Type != HookedSyscallTableEventType {
+		serializer.ProcessContextSerializer = NewProcessContextSerializer(&event.Process)
 	}
 
 	switch event.Kernel.Type {
@@ -316,6 +415,10 @@ func NewEventSerializer(event *Event) *EventSerializer {
 		serializer.KProbeEventSerializer = NewKProbeEventSerializer(&event.KProbeEvent)
 	case SysCtlEventType:
 		serializer.SysCtlEventEventSerializer = NewSysCtlEventSerializer(&event.SysCtlEvent)
+	case EventCheckEventType:
+		serializer.EventCheckEventSerializer = NewEventCheckEventSerializer(&event.EventCheckEvent)
+	case HookedSyscallTableEventType, HookedSyscallEventType:
+		serializer.HookedSyscallEventSerializer = NewHookedSyscallEventSerializer(&event.HookedSyscallEvent)
 	}
 	return serializer
 }

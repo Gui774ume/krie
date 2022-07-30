@@ -26,18 +26,21 @@ type KernelEvent struct {
 	Retval int64     `json:"retval"`
 	CPU    uint32    `json:"cpu"`
 	Type   EventType `json:"type"`
+	Action Action    `json:"action"`
 }
 
 // UnmarshalBinary unmarshalls a binary representation of itself
 func (ke *KernelEvent) UnmarshalBinary(data []byte, resolver *TimeResolver) (int, error) {
-	if len(data) < 24 {
+	if len(data) < 32 {
 		return 0, ErrNotEnoughData
 	}
 	ke.Time = resolver.ResolveMonotonicTimestamp(ByteOrder.Uint64(data[0:8]))
 	ke.Retval = int64(ByteOrder.Uint64(data[8:16]))
 	ke.CPU = ByteOrder.Uint32(data[16:20])
 	ke.Type = EventType(ByteOrder.Uint32(data[20:24]))
-	return 24, nil
+	ke.Action = Action(ByteOrder.Uint32(data[24:28]))
+	// padding 4 bytes
+	return 32, nil
 }
 
 // KernelEventSerializer is used to serialize KernelEvent

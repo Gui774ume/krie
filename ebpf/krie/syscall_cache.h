@@ -8,6 +8,17 @@
 #ifndef _SYSCALL_CACHE_H_
 #define _SYSCALL_CACHE_H_
 
+struct tracepoint_raw_syscalls_sys_exit_t
+{
+    unsigned short common_type;
+    unsigned char common_flags;
+    unsigned char common_preempt_count;
+    int common_pid;
+
+    long id;
+    long ret;
+};
+
 struct syscall_cache_t {
     u64 type;
 

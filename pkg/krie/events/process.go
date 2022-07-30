@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	CgroupNameLength = 72
+	CgroupNameLength = 128
 	TaskCommLength   = 16
 )
 

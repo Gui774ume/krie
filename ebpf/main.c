@@ -16,12 +16,13 @@
 #include "krie/events.h"
 #include "krie/process.h"
 #include "krie/syscall_cache.h"
-#include "krie/raw_syscalls.h"
-#include "krie/krie.h"
-#include "krie/filter.h"
+#include "krie/filter_krie_runtime.h"
+
+// krie
+#include "krie/krie/krie.h"
 
 // events
-#include "krie/events/all_events.h"
+#include "krie/hooks/all_hooks.h"
 
 char _license[] SEC("license") = "GPL";
 __u32 _version SEC("version") = 0xFFFFFFFE;

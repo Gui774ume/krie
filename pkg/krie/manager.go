@@ -67,6 +67,9 @@ func (e *KRIE) startManager() error {
 		return err
 	}
 
+	logrus.Infoln("KRIE is now running (Ctrl + C to stop)\n")
+	logrus.Infof("activated events: [%s]", e.options.Events.ActivatedEventTypes())
+
 	// start the manager
 	if err = e.manager.Start(); err != nil {
 		return fmt.Errorf("couldn't start manager: %w", err)
@@ -121,7 +124,7 @@ func (e *KRIE) prepareManager() {
 			Max: math.MaxUint64,
 		},
 
-		TailCallRouter: events.AllTailCallRoutes(e.options.Events),
+		TailCallRouter: events.AllTailCallRoutes(e.options.Events.ActivatedEventTypes()),
 
 		ConstantEditors: []manager.ConstantEditor{
 			{
@@ -136,11 +139,15 @@ func (e *KRIE) prepareManager() {
 				Name:  "krie_pid",
 				Value: uint64(Getpid()),
 			},
+			{
+				Name:  "krie_send_signal",
+				Value: events.IsBPFSendSignalHelperAvailable(),
+			},
 		},
-		ActivatedProbes: events.AllProbesSelectors(e.options.Events),
+		ActivatedProbes: events.AllProbesSelectors(e.options.Events.ActivatedEventTypes()),
 	}
 	e.manager = &manager.Manager{
-		Probes: events.AllProbes(e.options.Events),
+		Probes: events.AllProbes(e.options.Events.ActivatedEventTypes()),
 		PerfMaps: []*manager.PerfMap{
 			{
 				Map: manager.Map{Name: "events"},
@@ -242,19 +249,38 @@ func (e *KRIE) loadSpecFromBTFHub() (*btf.Spec, error) {
 
 func (e *KRIE) selectMaps() error {
 	var err error
-	e.sysctlParameters, _, err = e.manager.GetMap("sysctl_parameters")
+	e.sysctlParametersMap, _, err = e.manager.GetMap("sysctl_parameters")
 	if err != nil {
 		return fmt.Errorf("couldn't find maps/sysctl_parameters: %w", err)
 	}
 
-	e.sysctlDefault, _, err = e.manager.GetMap("sysctl_default")
+	e.sysctlDefaultMap, _, err = e.manager.GetMap("sysctl_default")
 	if err != nil {
 		return fmt.Errorf("couldn't find maps/sysctl_parameters_default: %w", err)
+	}
+
+	e.kallsymsMap, _, err = e.manager.GetMap("kallsyms")
+	if err != nil {
+		return fmt.Errorf("couldn't find maps/kallsyms: %w", err)
+	}
+	e.policiesMap, _, err = e.manager.GetMap("policies")
+	if err != nil {
+		return fmt.Errorf("couldn't find maps/policies: %w", err)
 	}
 	return nil
 }
 
 func (e *KRIE) loadFilters() error {
+	// load required kernel symbols
+	if err := e.loadKernelSymbols(); err != nil {
+		return err
+	}
+
+	// load policies
+	if err := e.loadPolicies(); err != nil {
+		return err
+	}
+
 	// load sysctl parameters
 	return e.loadSysCtlParameters()
 }

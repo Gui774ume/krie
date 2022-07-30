@@ -7,18 +7,44 @@ output: "/tmp/lolo.json"
 ## BTF information for the current kernel in .tar.xz format (required only if KRIE isn't able to locate it by itself)
 vmlinux: ""
 
-## List of events to activate (empty means everything)
+## events configuration
 events:
-  - sysctl
+  ## action taken when an init_module event is detected
+  init_module: log
 
-## Default settings for sysctl
-sysctl_default:
-  block_read_access: false
-  block_write_access: false
+  ## action taken when an delete_module event is detected
+  delete_module: log
 
-## Custom settings for sysctl
-sysctl_parameters:
-  kernel/yama/ptrace_scope:
-    block_write_access: true
-  kernel/ftrace_enabled:
-    override_input_value_with: "1\n"
+  ## action taken when a bpf event is detected
+  bpf: block
+
+  ## action taken when a bpf_filter event is detected
+  bpf_filter: log
+
+  ## action taken when a ptrace event is detected
+  ptrace: block
+
+  ## action taken when a kprobe event is detected
+  kprobe: log
+
+  ## action taken when a sysctl event is detected
+  sysctl:
+    action: nop
+
+    ## Default settings for sysctl
+    sysctl_default:
+      block_read_access: false
+      block_write_access: false
+
+    ## Custom settings for sysctl
+    sysctl_parameters:
+      kernel/yama/ptrace_scope:
+        block_write_access: true
+      kernel/ftrace_enabled:
+        override_input_value_with: "1\n"
+
+  ## action taken when a hooked_syscall_table event is detected
+  hooked_syscall_table: log
+
+  ## action taken when a hooked_syscall event is detected
+  hooked_syscall: log

@@ -52,6 +52,8 @@ struct process_context_t {
     u32 tid;
 };
 
+memory_factory(process_context)
+
 __attribute__((always_inline)) int fill_process_context(struct process_context_t *ctx) {
     // fetch current task
     struct task_struct* task = (struct task_struct*)bpf_get_current_task();
@@ -64,12 +66,14 @@ __attribute__((always_inline)) int fill_process_context(struct process_context_t
 
     // fetch cgroup data
     char *container_id;
+    u8 read = 0;
     #pragma unroll
     for (u32 i = 0; i <= CGROUP_SUBSYS_COUNT; i++) {
         ctx->cgroups[i].subsystem_id = i;
         BPF_CORE_READ_INTO(&ctx->cgroups[i].id, task, cgroups, subsys[i], id);
         BPF_CORE_READ_INTO(&container_id, task, cgroups, subsys[i], cgroup, kn, name);
-        bpf_probe_read_str(ctx->cgroups[i].name, sizeof(ctx->cgroups[i].name), container_id);
+        read = bpf_probe_read_str(ctx->cgroups[i].name, sizeof(ctx->cgroups[i].name), container_id);
+        ctx->cgroups[i].name[read & (CGROUP_MAX_LENGTH - 1)] = 0;
     }
 
     // fetch process credentials
@@ -101,5 +105,18 @@ __attribute__((always_inline)) int fill_process_context(struct process_context_t
     BPF_CORE_READ_INTO(&ctx->namespaces.uts_namespace, task, nsproxy, uts_ns, ns.inum);
     return 0;
 }
+
+__attribute__((always_inline)) void copy_process_ctx(struct process_context_t *dst, struct process_context_t *src) {
+    dst->pid = src->pid;
+    dst->tid = src->pid;
+    __builtin_memmove(dst->comm, src->comm, TASK_COMM_LEN);
+    __builtin_memmove(&dst->namespaces, &src->namespaces, sizeof(struct namespace_context_t));
+    __builtin_memmove(&dst->credentials, &src->credentials, sizeof(struct credentials_context_t));
+
+    #pragma unroll
+    for (u32 i = 0; i <= CGROUP_SUBSYS_COUNT; i++) {
+        __builtin_memmove(&dst->cgroups[i], &src->cgroups[i], sizeof(struct cgroup_context_t));
+    }
+};
 
 #endif

@@ -1,4 +1,4 @@
-all: build-ebpf build-ebpf-syscall-wrapper build install
+all: build-ebpf build-ebpf-syscall-wrapper generate build install
 
 build-ebpf:
 	mkdir -p ebpf/bin
@@ -38,10 +38,12 @@ build-ebpf-syscall-wrapper:
 		ebpf/main.c \
 		-o ebpf/bin/probe_syscall_wrapper.o
 
-build:
+generate:
 	go run github.com/shuLhan/go-bindata/cmd/go-bindata -pkg assets -prefix "ebpf/bin" -o "pkg/assets/probe.go" "ebpf/bin/probe_syscall_wrapper.o" "ebpf/bin/probe.o"
-	mkdir -p bin/
 	go generate ./...
+
+build:
+	mkdir -p bin/
 	go build -o bin/ ./cmd/...
 
 run:

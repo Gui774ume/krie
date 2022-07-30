@@ -17,8 +17,10 @@ limitations under the License.
 package krie
 
 import (
+	"debug/elf"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	manager "github.com/DataDog/ebpf-manager"
@@ -39,8 +41,15 @@ type KRIE struct {
 	manager        *manager.Manager
 	managerOptions manager.Options
 
-	sysctlParameters *ebpf.Map
-	sysctlDefault    *ebpf.Map
+	kernelSymbolsLock  *sync.Mutex
+	kernelSymbols      map[string]*elf.Symbol
+	kernelAddresses    map[events.MemoryPointer]*elf.Symbol
+	kernelKPTRRestrict string
+
+	sysctlParametersMap *ebpf.Map
+	sysctlDefaultMap    *ebpf.Map
+	kallsymsMap         *ebpf.Map
+	policiesMap         *ebpf.Map
 
 	startTime time.Time
 	numCPU    int
@@ -55,9 +64,12 @@ func NewKRIE(options *Options) (*KRIE, error) {
 	}
 
 	e := &KRIE{
-		event:       events.NewEvent(),
-		options:     options,
-		handleEvent: options.EventHandler,
+		event:             events.NewEvent(),
+		options:           options,
+		handleEvent:       options.EventHandler,
+		kernelSymbols:     make(map[string]*elf.Symbol),
+		kernelAddresses:   make(map[events.MemoryPointer]*elf.Symbol),
+		kernelSymbolsLock: &sync.Mutex{},
 	}
 	if e.handleEvent == nil {
 		e.handleEvent = e.defaultEventHandler
@@ -143,10 +155,14 @@ func (e *KRIE) defaultEventHandler(data []byte) error {
 		if read, err = event.InitModule.UnmarshallBinary(data[cursor:]); err != nil {
 			return err
 		}
+		// update symbols table
+		_ = e.loadKernelSymbols()
 	case events.DeleteModuleEventType:
 		if read, err = event.DeleteModule.UnmarshallBinary(data[cursor:]); err != nil {
 			return err
 		}
+		// update symbols table
+		_ = e.loadKernelSymbols()
 	case events.BPFEventType:
 		if read, err = event.BPFEvent.UnmarshallBinary(data[cursor:]); err != nil {
 			return err
@@ -168,11 +184,27 @@ func (e *KRIE) defaultEventHandler(data []byte) error {
 			return err
 		}
 		if event.SysCtlEvent.Action == 2 {
-			if param, ok := e.options.SysCtlParameters[event.SysCtlEvent.Name]; ok {
+			if param, ok := e.options.Events.SysCtlEvent.List[event.SysCtlEvent.Name]; ok {
 				event.SysCtlEvent.NewValueOverriddenWith = param.OverrideInputValueWith
 			} else {
-				event.SysCtlEvent.NewValueOverriddenWith = e.options.SysCtlDefault.OverrideInputValueWith
+				event.SysCtlEvent.NewValueOverriddenWith = e.options.Events.SysCtlEvent.Default.OverrideInputValueWith
 			}
+		}
+	case events.EventCheckEventType:
+		if read, err = event.EventCheckEvent.UnmarshallBinary(data[cursor:]); err != nil {
+			return err
+		}
+	case events.HookedSyscallEventType, events.HookedSyscallTableEventType:
+		if read, err = event.HookedSyscallEvent.UnmarshallBinary(data[cursor:]); err != nil {
+			return err
+		}
+
+		// fetch symbol owners
+		if err = e.resolveKernelSymbol(&event.HookedSyscallEvent.InitialHandler); err != nil {
+			logrus.Error(err)
+		}
+		if err = e.resolveKernelSymbol(&event.HookedSyscallEvent.NewHandler); err != nil {
+			logrus.Error(err)
 		}
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Kernel.Type)

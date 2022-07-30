@@ -47,6 +47,8 @@ func easyjson2269c87aDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 			out.CPU = uint32(in.Uint32())
 		case "type":
 			out.Type = EventType(in.Uint32())
+		case "action":
+			out.Action = Action(in.Uint32())
 		default:
 			in.SkipRecursive()
 		}
@@ -80,6 +82,11 @@ func easyjson2269c87aEncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writ
 		const prefix string = ",\"type\":"
 		out.RawString(prefix)
 		out.Raw((in.Type).MarshalJSON())
+	}
+	{
+		const prefix string = ",\"action\":"
+		out.RawString(prefix)
+		out.Raw((in.Action).MarshalJSON())
 	}
 	out.RawByte('}')
 }

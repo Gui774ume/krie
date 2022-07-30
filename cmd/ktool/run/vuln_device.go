@@ -50,6 +50,12 @@ var Trigger = &cobra.Command{
 	RunE:  triggerCmd,
 }
 
+var HookedSyscall = &cobra.Command{
+	Use:   "hooked-syscall",
+	Short: "Trigger a syscall hooked by VulnDevice",
+	RunE:  hookedSyscallCmd,
+}
+
 func init() {
 	Offsets.Flags().StringVar(
 		&options.SystemMapFile,
@@ -85,6 +91,7 @@ func init() {
 
 	VulnDevice.AddCommand(Offsets)
 	VulnDevice.AddCommand(Trigger)
+	VulnDevice.AddCommand(HookedSyscall)
 }
 
 func fetchSymbolAddr(data []byte, symbol string) uint64 {
@@ -298,5 +305,22 @@ func triggerCmd(cmd *cobra.Command, args []string) error {
 	_ = f.Sync()
 
 	logrus.Infof("current user is: %d", os.Getuid())
+	return nil
+}
+
+func hookedSyscallCmd(cmd *cobra.Command, args []string) error {
+	// Set log level
+	logrus.SetLevel(options.LogLevel)
+
+	filenamePtr, err := syscall.BytePtrFromString("/tmp/hooked_syscall_trigger")
+	if err != nil {
+		return err
+	}
+	fd, _, errno := syscall.Syscall(syscall.SYS_OPEN, uintptr(unsafe.Pointer(filenamePtr)), syscall.O_CREAT, 0755)
+	if errno != 0 {
+		return error(errno)
+	}
+	defer syscall.Close(int(fd))
+
 	return nil
 }

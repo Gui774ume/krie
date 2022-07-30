@@ -40,6 +40,8 @@ build-ebpf-syscall-wrapper:
 
 generate:
 	go run github.com/shuLhan/go-bindata/cmd/go-bindata -pkg assets -prefix "ebpf/bin" -o "pkg/assets/probe.go" "ebpf/bin/probe_syscall_wrapper.o" "ebpf/bin/probe.o"
+
+generate-serializer:
 	go generate ./...
 
 build:

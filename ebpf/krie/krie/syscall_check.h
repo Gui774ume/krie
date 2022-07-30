@@ -145,7 +145,10 @@ __attribute__((always_inline)) u32 run_syscall_check(void *ctx, struct process_c
         // ignore, should not happen
         return KRIE_ACTION_NOP;
     }
+    input.key.syscall_nr = key->syscall_nr;
+    input.key.syscall_table = key->syscall_table;
     copy_process_ctx(&input.event->process, process_ctx);
+    input.event->event.action = policy->action;
 
     // select the right syscall table
     switch (key->syscall_table) {
@@ -186,6 +189,7 @@ __attribute__((always_inline)) u32 run_syscall_table_check(void *ctx) {
         // ignore, should not happen
         return KRIE_ACTION_NOP;
     }
+    input.event->event.action = policy->action;
 
     // randomly select one of the three syscall tables
     u64 ts = bpf_ktime_get_ns();

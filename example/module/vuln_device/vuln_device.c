@@ -161,17 +161,18 @@ static int __init krie_vuln_device_init(void) {
     info_msg_len = sprintf(info_buffer, "{\"major_num\": %d, \"@fn_array\": \"0x%lx\"}\n", major_num, (long unsigned int)&fn_array[0]);
     info_buffer_ptr = info_buffer;
 
-    sys_call_table = (u64 *)0xffffffff99e00300;
+    sys_call_table = (u64 *)0xffffffff91c00300;
 
     // disable write_protect and hook syscall
     original_cr0 = read_cr0();
+    printk(KERN_INFO "write_protect: %d\n", (original_cr0 & 0x10000) == 0x10000);
     write_forced_cr0(original_cr0 & ~0x10000);
     /* Keep a pointer to the original function in
     * original_call, and then replace the system call
     * in the system call table with our_sys_open */
     original_call = sys_call_table[__NR_open];
     sys_call_table[__NR_open] = our_sys_open;
-    write_forced_cr0(original_cr0);
+    write_forced_cr0((original_cr0 | 0x10000));
 
     printk(KERN_INFO "open is at 0x%x\n", original_call);
     printk(KERN_INFO "jumping to 0x%x\n", our_sys_open);
@@ -187,7 +188,7 @@ static void __exit krie_vuln_device_exit(void) {
     if (sys_call_table[__NR_open] == our_sys_open) {
         write_forced_cr0(original_cr0 & ~0x10000);
         sys_call_table[__NR_open] = original_call;
-        write_forced_cr0(original_cr0);
+        write_forced_cr0((original_cr0 | 0x10000));
     }
 
 }

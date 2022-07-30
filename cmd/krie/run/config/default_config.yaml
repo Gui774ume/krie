@@ -13,19 +13,19 @@ events:
   init_module: log
 
   ## action taken when an delete_module event is detected
-  delete_module: log
+  delete_module: nop
 
   ## action taken when a bpf event is detected
-  bpf: block
+  bpf: nop
 
   ## action taken when a bpf_filter event is detected
-  bpf_filter: log
+  bpf_filter: nop
 
   ## action taken when a ptrace event is detected
-  ptrace: block
+  ptrace: nop
 
   ## action taken when a kprobe event is detected
-  kprobe: log
+  kprobe: nop
 
   ## action taken when a sysctl event is detected
   sysctl:

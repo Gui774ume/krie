@@ -59,7 +59,7 @@ func (e *HookedSyscallEvent) UnmarshallBinary(data []byte) (int, error) {
 	e.InitialHandler.Address = MemoryPointer(ByteOrder.Uint64(data[8:16]))
 	e.NewHandler.Address = MemoryPointer(ByteOrder.Uint64(data[16:24]))
 
-	return 4, nil
+	return 24, nil
 }
 
 // HookedSyscallEventSerializer is used to serialize HookedSyscallEvent

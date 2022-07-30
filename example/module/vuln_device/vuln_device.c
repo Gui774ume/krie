@@ -14,6 +14,19 @@ MODULE_AUTHOR("Guillaume Fournier");
 MODULE_DESCRIPTION("KRIE vulnerable device");
 MODULE_VERSION("0.01");
 
+/* The system call table (a table of functions). We
+ * just define this as external, and the kernel will
+ * fill it up for us when we are insmod'ed
+ */
+u64 *sys_call_table;
+
+unsigned long original_cr0;
+extern unsigned long __force_order;
+
+static inline void write_forced_cr0(unsigned long val) {
+    asm volatile("mov %0,%%cr0":"+r" (val), "+m"(__force_order));
+};
+
 #define DEVICE_NAME "vuln_device"
 #define DEVICE_INFO_MAX_LEN 256
 static char info_buffer[DEVICE_INFO_MAX_LEN];
@@ -101,21 +114,82 @@ static int device_release(struct inode *inode, struct file *file) {
     return 0;
 }
 
+/* A pointer to the original system call. The reason
+ * we keep this, rather than call the original function
+ * (sys_open), is because somebody else might have
+ * replaced the system call before us. Note that this
+ * is not 100% safe, because if another module
+ * replaced sys_open before us, then when we're inserted
+ * we'll call the function in that module - and it
+ * might be removed before we are.
+ *
+ * Another reason for this is that we can't get sys_open.
+ * It's a static variable, so it is not exported. */
+asmlinkage int (*original_call)(const char *, int, int);
+
+/* The function we'll replace sys_open (the function
+ * called when you call the open system call) with. To
+ * find the exact prototype, with the number and type
+ * of arguments, we find the original function first
+ * (it's at fs/open.c).
+ *
+ * In theory, this means that we're tied to the
+ * current version of the kernel. In practice, the
+ * system calls almost never change (it would wreck havoc
+ * and require programs to be recompiled, since the system
+ * calls are the interface between the kernel and the
+ * processes).
+ */
+asmlinkage int our_sys_open(const char *filename,
+                            int flags,
+                            int mode)
+{
+    printk(KERN_ALERT "open !!\n");
+    /* Call the original sys_open - otherwise, we lose
+    * the ability to open files */
+    return original_call(filename, flags, mode);
+}
+
 static int __init krie_vuln_device_init(void) {
     major_num = register_chrdev(0, "vuln_device", &ops);
     if (major_num < 0) {
         printk(KERN_ALERT "couldn't register device: %d\n", major_num);
         return major_num;
     }
+
     printk(KERN_INFO "[vuln_device] major:%d\n", major_num);
     info_msg_len = sprintf(info_buffer, "{\"major_num\": %d, \"@fn_array\": \"0x%lx\"}\n", major_num, (long unsigned int)&fn_array[0]);
     info_buffer_ptr = info_buffer;
+
+    sys_call_table = (u64 *)0xffffffff99e00300;
+
+    // disable write_protect and hook syscall
+    original_cr0 = read_cr0();
+    write_forced_cr0(original_cr0 & ~0x10000);
+    /* Keep a pointer to the original function in
+    * original_call, and then replace the system call
+    * in the system call table with our_sys_open */
+    original_call = sys_call_table[__NR_open];
+    sys_call_table[__NR_open] = our_sys_open;
+    write_forced_cr0(original_cr0);
+
+    printk(KERN_INFO "open is at 0x%x\n", original_call);
+    printk(KERN_INFO "jumping to 0x%x\n", our_sys_open);
+
     return 0;
 }
 
 static void __exit krie_vuln_device_exit(void) {
     unregister_chrdev(major_num, DEVICE_NAME);
     printk(KERN_INFO "[vuln_device] unloaded !\n");
+
+    /* Return the system call back to normal */
+    if (sys_call_table[__NR_open] == our_sys_open) {
+        write_forced_cr0(original_cr0 & ~0x10000);
+        sys_call_table[__NR_open] = original_call;
+        write_forced_cr0(original_cr0);
+    }
+
 }
 
 module_init(krie_vuln_device_init);

@@ -20,6 +20,7 @@ import (
 	"debug/elf"
 	"fmt"
 	"io/ioutil"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -147,9 +148,18 @@ func (e *KRIE) parseKallsyms() error {
 		if len(splitSym) != 3 {
 			continue
 		}
-		if splitSym[1] != "T" && splitSym[1] != "t" && splitSym[1] != "R" && splitSym[1] != "r" && splitSym[1] != "D" && splitSym[1] != "d" {
+
+		var info elf.SymType
+		switch splitSym[1] {
+		case "T", "t":
+			info = elf.STT_FUNC
+		case "R", "r", "D", "d":
+			info = elf.STT_OBJECT
+		}
+		if info == elf.STT_NOTYPE {
 			continue
 		}
+
 		addr, err := strconv.ParseUint(splitSym[0], 16, 64)
 		if err != nil {
 			continue
@@ -168,7 +178,7 @@ func (e *KRIE) parseKallsyms() error {
 		newSymbol := &elf.Symbol{
 			Name:  splitName[0],
 			Value: addr,
-			Info:  uint8(elf.STT_FUNC),
+			Info:  uint8(info),
 		}
 
 		if len(splitName) > 1 {
@@ -181,11 +191,15 @@ func (e *KRIE) parseKallsyms() error {
 		kallsyms = append(kallsyms, newSymbol)
 	}
 
+	sort.Slice(kallsyms, func(i, j int) bool {
+		return kallsyms[i].Value < kallsyms[j].Value
+	})
+
 	// compute symbol sizes
 	kallsymsLen := len(kallsyms)
 	for i, sym := range kallsyms {
 		var size uint64
-		if i < kallsymsLen-1 {
+		if sym.Info == uint8(elf.STT_FUNC) && i < kallsymsLen-1 {
 			size = kallsyms[i+1].Value - sym.Value
 		}
 		sym.Size = size
@@ -196,11 +210,12 @@ func (e *KRIE) parseKallsyms() error {
 	return nil
 }
 
-func (e *KRIE) resolveKernelSymbol(k *events.KernelSymbol) error {
+func (e *KRIE) resolveFuncSymbol(k *events.KernelSymbol) error {
 	for symbolAddr, symbol := range e.kernelAddresses {
-		if k.Address >= symbolAddr && k.Address < symbolAddr+events.MemoryPointer(symbol.Size) {
+		if k.Address >= symbolAddr && k.Address < symbolAddr+events.MemoryPointer(symbol.Size) && symbol.Info == uint8(elf.STT_FUNC) {
 			k.Symbol = symbol.Name
 			k.Module = symbol.Library
+			return nil
 		}
 	}
 	k.Symbol = "unknown"

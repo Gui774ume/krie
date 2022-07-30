@@ -200,10 +200,10 @@ func (e *KRIE) defaultEventHandler(data []byte) error {
 		}
 
 		// fetch symbol owners
-		if err = e.resolveKernelSymbol(&event.HookedSyscallEvent.InitialHandler); err != nil {
+		if err = e.resolveFuncSymbol(&event.HookedSyscallEvent.InitialHandler); err != nil {
 			logrus.Error(err)
 		}
-		if err = e.resolveKernelSymbol(&event.HookedSyscallEvent.NewHandler); err != nil {
+		if err = e.resolveFuncSymbol(&event.HookedSyscallEvent.NewHandler); err != nil {
 			logrus.Error(err)
 		}
 	default:

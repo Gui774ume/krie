@@ -17,8 +17,8 @@ struct syscall_table_selector_t {
 };
 
 struct syscall_table_entry_t {
-    u64 syscall_handler_addr;
-    u64 init_event_lock;
+    u64 init_syscall_handler_addr;
+    u64 last_syscall_handler_addr;
 };
 
 struct {
@@ -77,28 +77,45 @@ __attribute__((always_inline)) void check_syscall(void *ctx, struct check_syscal
         return;
     }
 
-    if (input->entry == NULL && lock_syscall_table(input->key.syscall_nr)) {
-        input->new_entry.syscall_handler_addr = addr;
+    bool has_lock = lock_syscall_table(input->key.syscall_nr);
+    if (input->entry == NULL && has_lock) {
+        input->new_entry.init_syscall_handler_addr = addr;
         bpf_map_update_elem(&syscall_table, &input->key, &input->new_entry, BPF_ANY);
         input->entry = bpf_map_lookup_elem(&syscall_table, &input->key);
     } else {
-        input->new_entry.syscall_handler_addr = 0;
+        input->new_entry.init_syscall_handler_addr = 0;
+        input->new_entry.last_syscall_handler_addr = 0;
     }
     if (input->entry == NULL) {
         // someone else has the lock on that syscall, ignore
         return;
     }
 
+    int addr_ok = check_syscall_addr(addr, input->_stext, input->_etext);
+    bool should_alert = 0;
+    if (!addr_ok && input->event_type == EVENT_HOOKED_SYSCALL) {
+        should_alert = 1;
+    }
+    if (has_lock) {
+        if (!addr_ok && input->event_type == EVENT_HOOKED_SYSCALL_TABLE) {
+            if (input->entry->last_syscall_handler_addr != addr) {
+                should_alert = 1;
+            }
+        }
+        input->entry->last_syscall_handler_addr = addr;
+    }
+
     // check addr now
-    if (!check_syscall_addr(addr, input->_stext, input->_etext) || input->entry->syscall_handler_addr != addr) {
+    if (should_alert) {
         // send event
-        input->event->init_addr = input->entry->syscall_handler_addr;
+        input->event->init_addr = input->entry->init_syscall_handler_addr;
         input->event->new_addr = addr;
         input->event->syscall = input->key;
         int perf_ret;
         send_event_ptr(ctx, input->event_type, input->event);
-        if (perf_ret == 0 && input->new_entry.syscall_handler_addr == addr) {
-            input->entry->init_event_lock = 1;
+        if (perf_ret != 0 && has_lock && input->event_type == EVENT_HOOKED_SYSCALL_TABLE) {
+            // make sure we'll retry to send this hook later
+            input->entry->last_syscall_handler_addr = 0;
         }
 
         // notify that the syscall was hooked

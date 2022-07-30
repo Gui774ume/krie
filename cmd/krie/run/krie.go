@@ -58,7 +58,7 @@ func parseConfig() error {
 
 func krieCmd(cmd *cobra.Command, args []string) error {
 	if err := parseConfig(); err != nil {
-
+		return err
 	}
 	// Set log level
 	logrus.SetLevel(logrus.Level(options.KRIEOptions.LogLevel))
@@ -69,7 +69,6 @@ func krieCmd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("couldn't create a new instance of KRIE: %w", err)
 	}
 
-	logrus.Infoln("Tracing started ... (Ctrl + C to stop)\n")
 	if err := trace.Start(); err != nil {
 		return fmt.Errorf("couldn't start: %w", err)
 	}

@@ -8,33 +8,39 @@
 #ifndef _CONSTANTS_H
 #define _CONSTANTS_H
 
-#define CGROUP_MAX_LENGTH 72
+#define CGROUP_MAX_LENGTH 128
 #define TASK_COMM_LEN 16
 #define MODULE_NAME_LEN 56
 #define BPF_OBJ_NAME_LEN 16
 #define BPF_TAG_SIZE 8
 #define SYMBOL_NAME_LENGTH 64
 
-#include "events/bpf_const.h"
+#include "hooks/bpf_const.h"
 
 #define LOAD_CONSTANT(param, var) asm("%0 = " param " ll" : "=r"(var))
 
-static __attribute__((always_inline)) u64 get_raw_syscall_tracepoint_fallback() {
+__attribute__((always_inline)) u64 get_raw_syscall_tracepoint_fallback() {
     u64 raw_syscall_tracepoint_fallback;
     LOAD_CONSTANT("raw_syscall_tracepoint_fallback", raw_syscall_tracepoint_fallback);
     return raw_syscall_tracepoint_fallback;
-}
+};
 
-u64 __attribute__((always_inline)) get_check_helper_call_input(void) {
+__attribute__((always_inline)) u64 get_check_helper_call_input() {
     u64 input;
     LOAD_CONSTANT("check_helper_call_input", input);
     return input;
-}
+};
 
-u64 __attribute__((always_inline)) get_krie_pid(void) {
+__attribute__((always_inline)) u64 get_krie_pid() {
     u64 krie_pid;
     LOAD_CONSTANT("krie_pid", krie_pid);
     return krie_pid;
-}
+};
+
+__attribute__((always_inline)) u64 get_krie_send_signal() {
+    u64 krie_send_signal;
+    LOAD_CONSTANT("krie_send_signal", krie_send_signal);
+    return krie_send_signal;
+};
 
 #endif

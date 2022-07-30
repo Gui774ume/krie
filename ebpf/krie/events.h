@@ -18,6 +18,11 @@ enum event_type
     EVENT_PTRACE,
     EVENT_KPROBE,
     EVENT_SYSCTL,
+
+    // KRIE security events
+    EVENT_HOOKED_SYSCALL_TABLE,
+    EVENT_HOOKED_SYSCALL,
+    EVENT_CHECK_EVENT,
     EVENT_MAX, // has to be the last one
 };
 
@@ -26,6 +31,8 @@ struct kernel_event_t {
     s64 retval;
     u32 cpu;
     u32 type;
+    u32 action;
+    u32 padding;
 };
 
 struct perf_map_stats_t {

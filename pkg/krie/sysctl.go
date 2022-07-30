@@ -18,45 +18,21 @@ package krie
 
 import (
 	"fmt"
-
-	"github.com/Gui774ume/krie/pkg/krie/events"
 )
-
-type SysCtlParameter struct {
-	BlockWriteAccess       bool   `yaml:"block_write_access"`
-	BlockReadAccess        bool   `yaml:"block_read_access"`
-	OverrideInputValueWith string `yaml:"override_input_value_with"`
-}
-
-// MarshalBinary returns a binary representation of itself
-func (scp SysCtlParameter) MarshalBinary() ([]byte, error) {
-	b := make([]byte, 264)
-	events.ByteOrder.PutUint32(b[0:4], uint32(len(scp.OverrideInputValueWith)))
-	if scp.BlockWriteAccess {
-		events.ByteOrder.PutUint16(b[4:6], 1)
-	}
-	if scp.BlockReadAccess {
-		events.ByteOrder.PutUint16(b[6:8], 1)
-	}
-	if len(scp.OverrideInputValueWith) > 0 {
-		copy(b[8:264], scp.OverrideInputValueWith)
-	}
-	return b, nil
-}
 
 func (e *KRIE) loadSysCtlParameters() error {
 	// load parameters
-	for name, param := range e.options.SysCtlParameters {
+	for name, param := range e.options.Events.SysCtlEvent.List {
 		b := make([]byte, 256)
 		copy(b, name)
-		if err := e.sysctlParameters.Put(b, &param); err != nil {
+		if err := e.sysctlParametersMap.Put(b, &param); err != nil {
 			return fmt.Errorf("failed to push SysCtlParameter for %s: %w", name, err)
 		}
 	}
 
 	// load defaults
 	key := uint32(0)
-	if err := e.sysctlDefault.Put(key, &e.options.SysCtlDefault); err != nil {
+	if err := e.sysctlDefaultMap.Put(key, &e.options.Events.SysCtlEvent.Default); err != nil {
 		return fmt.Errorf("failed to push default SysCtlParameter: %w", err)
 	}
 	return nil

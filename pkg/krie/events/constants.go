@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"golang.org/x/sys/unix"
+	"gopkg.in/yaml.v3"
 )
 
 // CgroupSubsystemID is used to parse a cgroup subsystem ID
@@ -628,6 +629,14 @@ var (
 		"SYSCTL_EINVAL":   3,
 		"SYSCTL_ERANGE":   4,
 	}
+
+	ActionConstants = map[string]Action{
+		"nop":      NopAction,
+		"log":      LogAction,
+		"block":    BlockAction,
+		"kill":     KillAction,
+		"paranoid": ParanoidAction,
+	}
 )
 
 var (
@@ -644,7 +653,14 @@ var (
 	kprobeCommandStrings  = map[KProbeCommand]string{}
 	kprobeTypeStrings     = map[KProbeType]string{}
 	sysctlActionStrings   = map[SysCtlAction]string{}
+	actionStrings         = map[Action]string{}
 )
+
+func initActionConstants() {
+	for k, v := range ActionConstants {
+		actionStrings[v] = k
+	}
+}
 
 func initSysCtlActionConstants() {
 	for k, v := range SysCtlActionConstants {
@@ -738,6 +754,7 @@ func init() {
 	initKProbeCommandConstants()
 	initKProbeTypeConstants()
 	initSysCtlActionConstants()
+	initActionConstants()
 }
 
 func bitmaskToStringArray(bitmask int, intToStrMap map[int]string) []string {
@@ -792,6 +809,66 @@ func bitmaskU64ToStringArray(bitmask uint64, intToStrMap map[uint64]string) []st
 
 func bitmaskU64ToString(bitmask uint64, intToStrMap map[uint64]string) string {
 	return strings.Join(bitmaskU64ToStringArray(bitmask, intToStrMap), " | ")
+}
+
+// SyscallTable is used to represent a syscall table
+type SyscallTable uint32
+
+const (
+	SysCallTable SyscallTable = iota
+	X32SysCallTable
+	IA32SysCallTable
+)
+
+func (st SyscallTable) String() string {
+	switch st {
+	case SysCallTable:
+		return "sys_call_table"
+	case X32SysCallTable:
+		return "x32_sys_call_table"
+	case IA32SysCallTable:
+		return "ia32_sys_call_table"
+	default:
+		return fmt.Sprintf("SyscallTable(%d)", st)
+	}
+}
+
+func (st SyscallTable) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", st.String())), nil
+}
+
+// Action is an action taken by KRIE
+type Action uint32
+
+const (
+	NopAction Action = iota
+	LogAction
+	BlockAction
+	KillAction
+	ParanoidAction
+)
+
+func (a Action) String() string {
+	return actionStrings[a]
+}
+
+func (a Action) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", a.String())), nil
+}
+
+func (a *Action) UnmarshalYAML(value *yaml.Node) error {
+	var action string
+	err := value.Decode(&action)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal the list of event types: %w", err)
+	}
+
+	var ok bool
+	*a, ok = ActionConstants[action]
+	if !ok {
+		return fmt.Errorf("unknown action: %s", action)
+	}
+	return nil
 }
 
 // PTraceRequest represents a ptrace request value

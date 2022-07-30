@@ -96,10 +96,20 @@ func getCompatSyscallFnName(name string) string {
 // ShouldUseSyscallExitTracepoints returns true if the kernel version is old and we need to use tracepoints to handle syscall exits
 // instead of kretprobes
 func ShouldUseSyscallExitTracepoints() uint64 {
+	_ = resolveCurrentHost()
 	if currentHost != nil && (currentHost.Code < kernel.Kernel4_12 || currentHost.IsRH7Kernel()) {
-		return 1
+		return uint64(1)
 	}
-	return 0
+	return uint64(0)
+}
+
+// IsBPFSendSignalHelperAvailable returns true if the bpf_send_signal helper is available in the current kernel
+func IsBPFSendSignalHelperAvailable() uint64 {
+	_ = resolveCurrentHost()
+	if currentHost != nil && (currentHost.Code >= kernel.Kernel5_3) {
+		return uint64(1)
+	}
+	return uint64(0)
 }
 
 // GetCheckHelperCallInputType returns 1 or 2 defending on the prototype of the check_helper_call function in the current kernel

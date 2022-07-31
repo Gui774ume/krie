@@ -147,6 +147,10 @@ func (e *KRIE) prepareManager() {
 				Name:  "kernel_parameter_ticker",
 				Value: uint64(e.options.Events.KernelParameterEvent.Ticker * time.Second.Nanoseconds()),
 			},
+			{
+				Name:  "kernel_parameter_count",
+				Value: uint64(len(e.options.Events.KernelParameterEvent.List)),
+			},
 		},
 		ActivatedProbes: events.AllProbesSelectors(e.options.Events.ActivatedEventTypes()),
 	}

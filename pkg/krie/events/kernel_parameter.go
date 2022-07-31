@@ -22,6 +22,9 @@ import (
 	"fmt"
 )
 
+// MaxKernelParameterCount is the hardcoded maximum count of kernel parameters that KRIE can check
+const MaxKernelParameterCount = 1000
+
 // KernelParameterEvent represents a kernel_parameter event
 type KernelParameterEvent struct {
 	Parameter     KernelSymbol `json:"parameter,omitempty"`
@@ -53,11 +56,35 @@ func NewKernelParameterEventSerializer(e *KernelParameterEvent) *KernelParameter
 	}
 }
 
+// ParameterOption is used to configure a kernel parameter that KRIE should check
+type ParameterOption struct {
+	Symbol        string `yaml:"symbol"`
+	Address       uint64 `yaml:"address"`
+	ExpectedValue uint64 `yaml:"expected_value"`
+	Size          uint64 `yaml:"size"`
+}
+
 // KernelParameterOptions is used to configure the kernel_parameter events
 type KernelParameterOptions struct {
-	Action         Action `yaml:"action"`
-	PeriodicAction Action `yaml:"periodic_action"`
-	Ticker         int64  `yaml:"ticker"`
+	Action         Action            `yaml:"action"`
+	PeriodicAction Action            `yaml:"periodic_action"`
+	Ticker         int64             `yaml:"ticker"`
+	List           []ParameterOption `yaml:"list"`
+}
+
+func (o KernelParameterOptions) IsValid() error {
+	if len(o.List) > MaxKernelParameterCount {
+		return fmt.Errorf("too many kernel parameters to check: %d > %d", len(o.List), MaxKernelParameterCount)
+	}
+	for _, param := range o.List {
+		if len(param.Symbol) == 0 && param.Address == 0 {
+			return fmt.Errorf("each parameter should have at least a symbol or an address: %+v", param)
+		}
+	}
+	if o.PeriodicAction == BlockAction || o.PeriodicAction == KillAction {
+		return fmt.Errorf("kernel_parameter.periodic_action cannot be set to \"block\" or \"kill\"")
+	}
+	return nil
 }
 
 // NewKernelParameterOptions returns a new instance of KernelParameterOptions

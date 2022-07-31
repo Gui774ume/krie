@@ -37,6 +37,9 @@ type Options struct {
 }
 
 func (o Options) IsValid() error {
+	if err := o.Events.IsValid(); err != nil {
+		return fmt.Errorf("invalid events section: %w", err)
+	}
 	return nil
 }
 

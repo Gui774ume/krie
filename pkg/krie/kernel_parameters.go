@@ -18,6 +18,8 @@ package krie
 
 import (
 	"fmt"
+
+	"github.com/Gui774ume/krie/pkg/krie/events"
 )
 
 type KernelParameter struct {
@@ -27,36 +29,28 @@ type KernelParameter struct {
 	Size          uint64
 }
 
-var (
-	kernerlParameters = []struct {
-		Symbol    string
-		Parameter *KernelParameter
-	}{
-		{
-			Symbol: "system/ftrace_enabled",
-			Parameter: &KernelParameter{
-				ExpectedValue: 1,
-				Size:          4,
-			},
-		},
-		{
-			Symbol: "system/kprobes_all_disarmed",
-			Parameter: &KernelParameter{
-				ExpectedValue: 0,
-				Size:          4,
-			},
-		},
+func kernelParameterFromParameterOption(po events.ParameterOption) *KernelParameter {
+	return &KernelParameter{
+		Address:       po.Address,
+		ExpectedValue: po.ExpectedValue,
+		Size:          po.Size,
 	}
-)
+}
 
 func (e *KRIE) loadKernelParameters() error {
-	for key, param := range kernerlParameters {
-		address, ok := e.kernelSymbols[param.Symbol]
-		if !ok {
-			return fmt.Errorf("couldn't find %s kernel parameter", param.Symbol)
+	for key, param := range e.options.Events.KernelParameterEvent.List {
+		if param.Address == 0 {
+			if len(param.Symbol) == 0 {
+				return fmt.Errorf("couldn't load kernel parameters: an address or a symbol must be provided for each parameter: %+v", param)
+			}
+			address, ok := e.kernelSymbols[param.Symbol]
+			if !ok {
+				return fmt.Errorf("couldn't find %s kernel parameter", param.Symbol)
+			}
+			param.Address = address.Value
 		}
-		param.Parameter.Address = address.Value
-		if err := e.kernelParametersMap.Put(uint32(key), param.Parameter); err != nil {
+
+		if err := e.kernelParametersMap.Put(uint32(key), kernelParameterFromParameterOption(param)); err != nil {
 			return fmt.Errorf("couldn't push %s kernel parameter: %w", param.Symbol, err)
 		}
 	}

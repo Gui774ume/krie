@@ -82,6 +82,17 @@ func (o *Options) ActivatedEventTypes() EventTypeList {
 	return o.activatedEvents
 }
 
+func (o *Options) IsValid() error {
+	if err := o.KernelParameterEvent.IsValid(); err != nil {
+		return fmt.Errorf("invalid kernel_parameter section: %w", err)
+	}
+
+	if o.HookedSyscallTableEvent == BlockAction || o.HookedSyscallTableEvent == KillAction {
+		return fmt.Errorf("hooked_syscall_table cannot be set to \"block\" or \"kill\"")
+	}
+	return nil
+}
+
 // NewEventsOptions returns a new initialized instance of EventsOptions
 func NewEventsOptions() *Options {
 	return &Options{

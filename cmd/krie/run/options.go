@@ -61,6 +61,7 @@ func (kos *KRIEOptionsSanitizer) Set(val string) error {
 		if err != nil {
 			return fmt.Errorf("couldn't find config file %s: %w", val, err)
 		}
+		kos.options.Config = val
 		return nil
 	default:
 		return nil

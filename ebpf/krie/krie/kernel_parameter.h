@@ -26,19 +26,14 @@ struct kernel_parameter_event_t {
 
 memory_factory(kernel_parameter_event)
 
+#define KERNEL_PARAMETER_MAX 50
+
 struct {
 	__uint(type, BPF_MAP_TYPE_HASH);
 	__type(key, u32);
 	__type(value, struct kernel_parameter_t);
-	__uint(max_entries, 1000);
+	__uint(max_entries, KERNEL_PARAMETER_MAX);
 } kernel_parameters SEC(".maps");
-
-enum kernel_parameter_key {
-    KERNEL_PARAMETER_MIN = 0,
-    KERNEL_PARAMETER_FTRACE_ENABLED = KERNEL_PARAMETER_MIN,
-    KERNEL_PARAMETER_KPROBES_ALL_DISAMED = 1,
-    KERNEL_PARAMETER_MAX = KERNEL_PARAMETER_KPROBES_ALL_DISAMED,
-};
 
 __attribute__((always_inline)) u32 run_kernel_parameter_check(void *ctx, struct process_context_t *process_ctx, u8 is_periodic) {
     u32 kernel_parameter_key = 0;
@@ -62,14 +57,17 @@ __attribute__((always_inline)) u32 run_kernel_parameter_check(void *ctx, struct 
     event->event.action = policy->action;
 
     #pragma unroll
-    for(int i = KERNEL_PARAMETER_MIN; i <= KERNEL_PARAMETER_MAX; i++) {
+    for(int i = 0; i < KERNEL_PARAMETER_MAX; i++) {
+        if (i >= get_kernel_parameter_count()){
+            goto out;
+        }
         kernel_parameter_key = i;
         param = bpf_map_lookup_elem(&kernel_parameters, &kernel_parameter_key);
         if (param == NULL) {
-            continue;
+            goto out;
         }
         if (param->addr == 0) {
-            continue;
+            goto out;
         }
         bpf_probe_read_kernel(&event->actual_value, (param->size & 7), (void *)param->addr);
 
@@ -84,6 +82,7 @@ __attribute__((always_inline)) u32 run_kernel_parameter_check(void *ctx, struct 
         }
     }
 
+out:
     if (triggered) {
         return policy->action;
     }

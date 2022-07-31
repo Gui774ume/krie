@@ -61,7 +61,7 @@ func NewKRIE(options *Options) (*KRIE, error) {
 	var err error
 
 	if err = options.IsValid(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid configuration: %w", err)
 	}
 
 	e := &KRIE{

@@ -49,4 +49,10 @@ __attribute__((always_inline)) u64 get_kernel_parameter_ticker() {
     return kernel_parameter_ticker;
 };
 
+__attribute__((always_inline)) u64 get_kernel_parameter_count() {
+    u64 kernel_parameter_count;
+    LOAD_CONSTANT("kernel_parameter_count", kernel_parameter_count);
+    return kernel_parameter_count;
+};
+
 #endif

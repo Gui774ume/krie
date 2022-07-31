@@ -52,5 +52,68 @@ events:
   ## kernel_parameter event configuration
   kernel_parameter:
     action: nop
-    periodic_action: nop
+    periodic_action: log
     ticker: 1 # sends at most one event every [ticker] second(s)
+    list:
+      - symbol: system/kprobes_all_disarmed
+        expected_value: 0
+        size: 4
+
+      # sysctl
+      - symbol: system/ftrace_dump_on_oops
+        expected_value: 0
+        size: 4
+      - symbol: system/kptr_restrict
+        expected_value: 0
+        size: 4
+      - symbol: system/randomize_va_space
+        expected_value: 2
+        size: 4
+      - symbol: system/stack_tracer_enabled
+        expected_value: 0
+        size: 4
+      - symbol: system/unprivileged_userns_clone
+        expected_value: 0
+        size: 4
+      - symbol: system/unprivileged_userns_apparmor_policy
+        expected_value: 1
+        size: 4
+      - symbol: system/sysctl_unprivileged_bpf_disabled
+        expected_value: 1
+        size: 4
+      - symbol: system/ptrace_scope
+        expected_value: 2
+        size: 4
+      - symbol: system/sysctl_perf_event_paranoid
+        expected_value: 2
+        size: 4
+      - symbol: system/kexec_load_disabled
+        expected_value: 1
+        size: 4
+      - symbol: system/dmesg_restrict
+        expected_value: 1
+        size: 4
+      - symbol: system/modules_disabled
+        expected_value: 0
+        size: 4
+      - symbol: system/ftrace_enabled
+        expected_value: 1
+        size: 4
+      - symbol: system/ftrace_disabled
+        expected_value: 0
+        size: 4
+      - symbol: system/sysctl_protected_fifos
+        expected_value: 1
+        size: 4
+      - symbol: system/sysctl_protected_hardlinks
+        expected_value: 1
+        size: 4
+      - symbol: system/sysctl_protected_regular
+        expected_value: 2
+        size: 4
+      - symbol: system/sysctl_protected_symlinks
+        expected_value: 1
+        size: 4
+      - symbol: system/sysctl_unprivileged_userfaultfd
+        expected_value: 0
+        size: 4

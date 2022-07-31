@@ -6,6 +6,9 @@
  * License as published by the Free Software Foundation.
  */
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-but-set-variable"
+
 // Custom eBPF helpers
 #include "include/all.h"
 
@@ -23,6 +26,8 @@
 
 // events
 #include "krie/hooks/all_hooks.h"
+
+#pragma clang diagnostic pop
 
 char _license[] SEC("license") = "GPL";
 __u32 _version SEC("version") = 0xFFFFFFFE;

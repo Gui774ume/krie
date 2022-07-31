@@ -176,7 +176,7 @@ __attribute__((always_inline)) u32 run_syscall_check(void *ctx, struct process_c
 __attribute__((always_inline)) u32 run_syscall_table_check(void *ctx) {
     // lookup syscall table policy
     u32 event_type = EVENT_HOOKED_SYSCALL_TABLE;
-    fetch_policy_or_log(event_type)
+    fetch_policy_or_block(event_type)
 
     // fetch syscall tables symbol addresses
     struct check_syscall_t input = {

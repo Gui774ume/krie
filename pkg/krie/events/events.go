@@ -35,15 +35,16 @@ const (
 
 // Options stores the options for each event type
 type Options struct {
-	InitModuleEvent         Action         `yaml:"init_module"`
-	DeleteModuleEvent       Action         `yaml:"delete_module"`
-	BPFEvent                Action         `yaml:"bpf"`
-	BPFFilterEvent          Action         `yaml:"bpf_filter"`
-	PTraceEvent             Action         `yaml:"ptrace"`
-	KProbeEvent             Action         `yaml:"kprobe"`
-	SysCtlEvent             *SysCtlOptions `yaml:"sysctl"`
-	HookedSyscallTableEvent Action         `yaml:"hooked_syscall_table"`
-	HookedSyscallEvent      Action         `yaml:"hooked_syscall"`
+	InitModuleEvent         Action                  `yaml:"init_module"`
+	DeleteModuleEvent       Action                  `yaml:"delete_module"`
+	BPFEvent                Action                  `yaml:"bpf"`
+	BPFFilterEvent          Action                  `yaml:"bpf_filter"`
+	PTraceEvent             Action                  `yaml:"ptrace"`
+	KProbeEvent             Action                  `yaml:"kprobe"`
+	SysCtlEvent             *SysCtlOptions          `yaml:"sysctl"`
+	HookedSyscallTableEvent Action                  `yaml:"hooked_syscall_table"`
+	HookedSyscallEvent      Action                  `yaml:"hooked_syscall"`
+	KernelParameterEvent    *KernelParameterOptions `yaml:"kernel_parameter"`
 
 	eventsAction    map[EventType]Action `yaml:"-"`
 	activatedEvents EventTypeList        `yaml:"-"`
@@ -52,15 +53,17 @@ type Options struct {
 func (o *Options) ParseEventsActions() map[EventType]Action {
 	if len(o.eventsAction) == 0 {
 		for eventType, action := range map[EventType]Action{
-			InitModuleEventType:         o.InitModuleEvent,
-			DeleteModuleEventType:       o.DeleteModuleEvent,
-			BPFEventType:                o.BPFEvent,
-			BPFFilterEventType:          o.BPFFilterEvent,
-			PTraceEventType:             o.PTraceEvent,
-			KProbeEventType:             o.KProbeEvent,
-			SysCtlEventType:             o.SysCtlEvent.Action,
-			HookedSyscallTableEventType: o.HookedSyscallTableEvent,
-			HookedSyscallEventType:      o.HookedSyscallEvent,
+			InitModuleEventType:              o.InitModuleEvent,
+			DeleteModuleEventType:            o.DeleteModuleEvent,
+			BPFEventType:                     o.BPFEvent,
+			BPFFilterEventType:               o.BPFFilterEvent,
+			PTraceEventType:                  o.PTraceEvent,
+			KProbeEventType:                  o.KProbeEvent,
+			SysCtlEventType:                  o.SysCtlEvent.Action,
+			HookedSyscallTableEventType:      o.HookedSyscallTableEvent,
+			HookedSyscallEventType:           o.HookedSyscallEvent,
+			KernelParameterEventType:         o.KernelParameterEvent.Action,
+			PeriodicKernelParameterEventType: o.KernelParameterEvent.PeriodicAction,
 		} {
 			o.eventsAction[eventType] = action
 		}
@@ -82,8 +85,9 @@ func (o *Options) ActivatedEventTypes() EventTypeList {
 // NewEventsOptions returns a new initialized instance of EventsOptions
 func NewEventsOptions() *Options {
 	return &Options{
-		eventsAction: make(map[EventType]Action),
-		SysCtlEvent:  NewSysCtlOptions(),
+		eventsAction:         make(map[EventType]Action),
+		SysCtlEvent:          NewSysCtlOptions(),
+		KernelParameterEvent: NewKernelParameterOptions(),
 	}
 }
 
@@ -113,6 +117,10 @@ const (
 	HookedSyscallEventType
 	// EventCheckEventType is the event type of an event_check event
 	EventCheckEventType
+	// KernelParameterEventType is the event type of a kernel_parameter event
+	KernelParameterEventType
+	// PeriodicKernelParameterEventType is the event type of a periodic_kernel_parameter event
+	PeriodicKernelParameterEventType
 	// MaxEventType is used internally to get the maximum number of events.
 	MaxEventType
 )
@@ -139,6 +147,10 @@ func (t EventType) String() string {
 		return "hooked_syscall"
 	case EventCheckEventType:
 		return "event_check"
+	case KernelParameterEventType:
+		return "kernel_parameter"
+	case PeriodicKernelParameterEventType:
+		return "periodic_kernel_parameter"
 	default:
 		return fmt.Sprintf("EventType(%d)", t)
 	}
@@ -345,8 +357,9 @@ type Event struct {
 	SysCtlEvent    SysCtlEvent
 
 	// krie events
-	HookedSyscallEvent HookedSyscallEvent
-	EventCheckEvent    EventCheckEvent
+	HookedSyscallEvent   HookedSyscallEvent
+	EventCheckEvent      EventCheckEvent
+	KernelParameterEvent KernelParameterEvent
 }
 
 // NewEvent returns a new Event instance
@@ -387,8 +400,9 @@ type EventSerializer struct {
 	*SysCtlEventEventSerializer  `json:"sysctl,omitempty"`
 
 	// krie events
-	*HookedSyscallEventSerializer `json:"hooked_syscall,omitempty"`
-	*EventCheckEventSerializer    `json:"event_check,omitempty"`
+	*HookedSyscallEventSerializer   `json:"hooked_syscall,omitempty"`
+	*EventCheckEventSerializer      `json:"event_check,omitempty"`
+	*KernelParameterEventSerializer `json:"kernel_parameter,omitempty"`
 }
 
 // NewEventSerializer returns a new EventSerializer instance for the provided Event
@@ -419,6 +433,8 @@ func NewEventSerializer(event *Event) *EventSerializer {
 		serializer.EventCheckEventSerializer = NewEventCheckEventSerializer(&event.EventCheckEvent)
 	case HookedSyscallTableEventType, HookedSyscallEventType:
 		serializer.HookedSyscallEventSerializer = NewHookedSyscallEventSerializer(&event.HookedSyscallEvent)
+	case KernelParameterEventType, PeriodicKernelParameterEventType:
+		serializer.KernelParameterEventSerializer = NewKernelParameterEventSerializer(&event.KernelParameterEvent)
 	}
 	return serializer
 }

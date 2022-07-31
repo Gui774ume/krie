@@ -43,4 +43,10 @@ __attribute__((always_inline)) u64 get_krie_send_signal() {
     return krie_send_signal;
 };
 
+__attribute__((always_inline)) u64 get_kernel_parameter_ticker() {
+    u64 kernel_parameter_ticker;
+    LOAD_CONSTANT("kernel_parameter_ticker", kernel_parameter_ticker);
+    return kernel_parameter_ticker;
+};
+
 #endif

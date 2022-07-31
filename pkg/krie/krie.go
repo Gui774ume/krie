@@ -50,6 +50,7 @@ type KRIE struct {
 	sysctlDefaultMap    *ebpf.Map
 	kallsymsMap         *ebpf.Map
 	policiesMap         *ebpf.Map
+	kernelParametersMap *ebpf.Map
 
 	startTime time.Time
 	numCPU    int
@@ -204,6 +205,15 @@ func (e *KRIE) defaultEventHandler(data []byte) error {
 			logrus.Error(err)
 		}
 		if err = e.resolveFuncSymbol(&event.HookedSyscallEvent.NewHandler); err != nil {
+			logrus.Error(err)
+		}
+	case events.KernelParameterEventType, events.PeriodicKernelParameterEventType:
+		if read, err = event.KernelParameterEvent.UnmarshallBinary(data[cursor:]); err != nil {
+			return err
+		}
+
+		// fetch symbol
+		if err = e.resolveObjectSymbol(&event.KernelParameterEvent.Parameter); err != nil {
 			logrus.Error(err)
 		}
 	default:

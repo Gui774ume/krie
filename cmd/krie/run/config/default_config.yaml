@@ -48,3 +48,9 @@ events:
 
   ## action taken when a hooked_syscall event is detected
   hooked_syscall: log
+
+  ## kernel_parameter event configuration
+  kernel_parameter:
+    action: nop
+    periodic_action: nop
+    ticker: 1 # sends at most one event every [ticker] second(s)

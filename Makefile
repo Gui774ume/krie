@@ -1,4 +1,4 @@
-all: build-ebpf build-ebpf-syscall-wrapper generate build install
+all: build-ebpf build-ebpf-syscall-wrapper generate generate-serializer build install
 
 build-ebpf:
 	mkdir -p ebpf/bin

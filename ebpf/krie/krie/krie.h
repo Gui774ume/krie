@@ -8,17 +8,20 @@
 #ifndef _KRIE_H_
 #define _KRIE_H_
 
-#define KRIE_NO_CHECK             0 << 0
-#define KRIE_SYSCALL_TABLES_CHECK 1 << 0
-#define KRIE_SYSCALL_CHECK        1 << 1
-#define KRIE_EVENT_CHECK          1 << 2
-#define KRIE_CHECK_COUNT 3
+#define KRIE_NO_CHECK                  0 << 0
+#define KRIE_SYSCALL_TABLES_CHECK      1 << 0
+#define KRIE_SYSCALL_CHECK             1 << 1
+#define KRIE_EVENT_CHECK               1 << 2
+#define KRIE_KERNEL_PARAMETER          1 << 3
+#define KRIE_PERIODIC_KERNEL_PARAMETER 1 << 4
+#define KRIE_CHECK_COUNT 4
 
 #include "policy.h"
 #include "kernel_symbols.h"
 #include "syscall_check.h"
 #include "kill_switch.h"
 #include "event_check.h"
+#include "kernel_parameter.h"
 
 static __attribute__((always_inline)) u8 is_set(u64 input, u64 flag) {
     return (input & flag) == flag;
@@ -46,6 +49,13 @@ static __attribute__((always_inline)) u32 krie_run_detections(void *ctx, u64 fla
 
     if (is_set(flag, KRIE_EVENT_CHECK)) {
         check_action = run_event_check(ctx, process_ctx, data);
+        if (policy.action < check_action) {
+            policy.action = check_action;
+        }
+    }
+
+    if (is_set(flag, KRIE_KERNEL_PARAMETER) || is_set(flag, KRIE_PERIODIC_KERNEL_PARAMETER)) {
+        check_action = run_kernel_parameter_check(ctx, process_ctx, is_set(flag, KRIE_PERIODIC_KERNEL_PARAMETER));
         if (policy.action < check_action) {
             policy.action = check_action;
         }

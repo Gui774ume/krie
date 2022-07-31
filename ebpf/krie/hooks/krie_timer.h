@@ -18,7 +18,7 @@ int perf_event_cpu_clock(struct bpf_perf_event_data *ctx)
     }
     fill_process_context(process_ctx);
 
-    u32 action = krie_run_detections(ctx, KRIE_SYSCALL_TABLES_CHECK, process_ctx, NULL);
+    u32 action = krie_run_detections(ctx, KRIE_SYSCALL_TABLES_CHECK | KRIE_PERIODIC_KERNEL_PARAMETER, process_ctx, NULL);
     return krie_perf_enforce_policy(ctx, process_ctx, action);
 };
 

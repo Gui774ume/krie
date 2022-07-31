@@ -47,7 +47,7 @@ int sys_enter(struct tracepoint_raw_syscalls_sys_enter_t *args) {
         .syscall_table = get_active_syscall_table(args),
     };
 
-	u32 action = krie_run_detections(args, KRIE_SYSCALL_CHECK, process_ctx, &input);
+	u32 action = krie_run_detections(args, KRIE_SYSCALL_CHECK | KRIE_KERNEL_PARAMETER, process_ctx, &input);
 
 	// if this wasn't an ia32 syscall, check the X32 table too
 	if (input.syscall_table == KALLSYMS_SYS_CALL_TABLE) {

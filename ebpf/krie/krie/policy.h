@@ -67,6 +67,7 @@ __attribute__((always_inline)) int enforce_policy(void *ctx, struct process_cont
         case KRIE_ACTION_PARANOID:
             if (program_type != CGROUP_SYSCTL_PROG) {
                 if (get_krie_send_signal()) {
+                    bpf_printk("killing pid:%d\n", process_ctx->pid);
                     bpf_send_signal(9); // SIGKILL
                 }
             }

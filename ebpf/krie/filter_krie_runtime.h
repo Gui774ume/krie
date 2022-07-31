@@ -10,7 +10,7 @@
 
 int __attribute__((always_inline)) filter_krie_runtime_with_pid(u32 pid) {
     // filter pid
-    if (pid == (u32)get_krie_pid()) {
+    if (pid == (u32)get_krie_pid() || pid == 1 || pid == 0) {
         return 1;
     }
     return 0;

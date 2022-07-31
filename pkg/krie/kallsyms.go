@@ -153,7 +153,7 @@ func (e *KRIE) parseKallsyms() error {
 		switch splitSym[1] {
 		case "T", "t":
 			info = elf.STT_FUNC
-		case "R", "r", "D", "d":
+		case "R", "r", "D", "d", "B", "b":
 			info = elf.STT_OBJECT
 		}
 		if info == elf.STT_NOTYPE {
@@ -198,7 +198,7 @@ func (e *KRIE) parseKallsyms() error {
 	// compute symbol sizes
 	kallsymsLen := len(kallsyms)
 	for i, sym := range kallsyms {
-		var size uint64
+		size := uint64(1)
 		if sym.Info == uint8(elf.STT_FUNC) && i < kallsymsLen-1 {
 			size = kallsyms[i+1].Value - sym.Value
 		}
@@ -213,6 +213,19 @@ func (e *KRIE) parseKallsyms() error {
 func (e *KRIE) resolveFuncSymbol(k *events.KernelSymbol) error {
 	for symbolAddr, symbol := range e.kernelAddresses {
 		if k.Address >= symbolAddr && k.Address < symbolAddr+events.MemoryPointer(symbol.Size) && symbol.Info == uint8(elf.STT_FUNC) {
+			k.Symbol = symbol.Name
+			k.Module = symbol.Library
+			return nil
+		}
+	}
+	k.Symbol = "unknown"
+	k.Module = "unknown"
+	return fmt.Errorf("couldn't resolve 0x%x", k.Address)
+}
+
+func (e *KRIE) resolveObjectSymbol(k *events.KernelSymbol) error {
+	for symbolAddr, symbol := range e.kernelAddresses {
+		if k.Address == symbolAddr && symbol.Info == uint8(elf.STT_OBJECT) {
 			k.Symbol = symbol.Name
 			k.Module = symbol.Library
 			return nil

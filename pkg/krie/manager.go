@@ -143,6 +143,10 @@ func (e *KRIE) prepareManager() {
 				Name:  "krie_send_signal",
 				Value: events.IsBPFSendSignalHelperAvailable(),
 			},
+			{
+				Name:  "kernel_parameter_ticker",
+				Value: uint64(e.options.Events.KernelParameterEvent.Ticker * time.Second.Nanoseconds()),
+			},
 		},
 		ActivatedProbes: events.AllProbesSelectors(e.options.Events.ActivatedEventTypes()),
 	}
@@ -267,6 +271,10 @@ func (e *KRIE) selectMaps() error {
 	if err != nil {
 		return fmt.Errorf("couldn't find maps/policies: %w", err)
 	}
+	e.kernelParametersMap, _, err = e.manager.GetMap("kernel_parameters")
+	if err != nil {
+		return fmt.Errorf("couldn't find maps/kernel_parameters: %w", err)
+	}
 	return nil
 }
 
@@ -278,6 +286,11 @@ func (e *KRIE) loadFilters() error {
 
 	// load policies
 	if err := e.loadPolicies(); err != nil {
+		return err
+	}
+
+	// load kernel parameters
+	if err := e.loadKernelParameters(); err != nil {
 		return err
 	}
 

@@ -58,6 +58,9 @@ events:
       - symbol: system/kprobes_all_disarmed
         expected_value: 0
         size: 4
+#      - symbol: system/selinux_state
+#        expected_value: 256
+#        size: 2
 
       # sysctl
       - symbol: system/ftrace_dump_on_oops

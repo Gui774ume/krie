@@ -216,6 +216,10 @@ func (e *KRIE) defaultEventHandler(data []byte) error {
 		if err = e.resolveObjectSymbol(&event.KernelParameterEvent.Parameter); err != nil {
 			logrus.Error(err)
 		}
+	case events.RegisterCheckEventType:
+		if read, err = event.RegisterCheckEvent.UnmarshallBinary(data[cursor:]); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown event type: %s", event.Kernel.Type)
 	}

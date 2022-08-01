@@ -38,6 +38,7 @@ func easyjson692db02bDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 	out.HookedSyscallEventSerializer = new(HookedSyscallEventSerializer)
 	out.EventCheckEventSerializer = new(EventCheckEventSerializer)
 	out.KernelParameterEventSerializer = new(KernelParameterEventSerializer)
+	out.RegisterCheckEventSerializer = new(RegisterCheckEventSerializer)
 	in.Delim('{')
 	for !in.IsDelim('}') {
 		key := in.UnsafeFieldName(false)
@@ -168,6 +169,16 @@ func easyjson692db02bDecodeGithubComGui774umeKriePkgKrieEvents(in *jlexer.Lexer,
 				}
 				(*out.KernelParameterEventSerializer).UnmarshalEasyJSON(in)
 			}
+		case "register_check":
+			if in.IsNull() {
+				in.Skip()
+				out.RegisterCheckEventSerializer = nil
+			} else {
+				if out.RegisterCheckEventSerializer == nil {
+					out.RegisterCheckEventSerializer = new(RegisterCheckEventSerializer)
+				}
+				(*out.RegisterCheckEventSerializer).UnmarshalEasyJSON(in)
+			}
 		default:
 			in.SkipRecursive()
 		}
@@ -297,6 +308,16 @@ func easyjson692db02bEncodeGithubComGui774umeKriePkgKrieEvents(out *jwriter.Writ
 			out.RawString(prefix)
 		}
 		(*in.KernelParameterEventSerializer).MarshalEasyJSON(out)
+	}
+	if in.RegisterCheckEventSerializer != nil {
+		const prefix string = ",\"register_check\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		(*in.RegisterCheckEventSerializer).MarshalEasyJSON(out)
 	}
 	out.RawByte('}')
 }

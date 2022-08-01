@@ -15,6 +15,9 @@
 #define BPF_TAG_SIZE 8
 #define SYMBOL_NAME_LENGTH 64
 
+#define PREPARE_KERNEL_CRED_HOOK 0
+#define COMMIT_CREDS_HOOK        1
+
 #include "hooks/bpf_const.h"
 
 #define LOAD_CONSTANT(param, var) asm("%0 = " param " ll" : "=r"(var))

@@ -9,8 +9,7 @@
 #define _KRIE_TICKER_H_
 
 SEC("perf_event/syscall_table_ticker")
-int perf_event_syscall_table_ticker(struct bpf_perf_event_data *ctx)
-{
+int perf_event_syscall_table_ticker(struct bpf_perf_event_data *ctx) {
     struct process_context_t *process_ctx = new_process_context();
     if (process_ctx == NULL) {
         // should never happen, ignore
@@ -23,8 +22,7 @@ int perf_event_syscall_table_ticker(struct bpf_perf_event_data *ctx)
 };
 
 SEC("perf_event/kernel_parameter_ticker")
-int perf_event_kernel_parameter_ticker(struct bpf_perf_event_data *ctx)
-{
+int perf_event_kernel_parameter_ticker(struct bpf_perf_event_data *ctx) {
     struct process_context_t *process_ctx = new_process_context();
     if (process_ctx == NULL) {
         // should never happen, ignore

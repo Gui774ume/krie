@@ -25,6 +25,7 @@ enum event_type
     EVENT_CHECK_EVENT,
     EVENT_KERNEL_PARAMETER,
     EVENT_PERIODIC_KERNEL_PARAMETER,
+    EVENT_REGISTER_CHECK,
     EVENT_MAX, // has to be the last one
 };
 

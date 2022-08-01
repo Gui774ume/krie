@@ -45,6 +45,7 @@ type Options struct {
 	HookedSyscallTableEvent Action                  `yaml:"hooked_syscall_table"`
 	HookedSyscallEvent      Action                  `yaml:"hooked_syscall"`
 	KernelParameterEvent    *KernelParameterOptions `yaml:"kernel_parameter"`
+	RegisterCheckEvent      Action                  `yaml:"register_check"`
 
 	eventsAction    map[EventType]Action `yaml:"-"`
 	activatedEvents EventTypeList        `yaml:"-"`
@@ -64,6 +65,7 @@ func (o *Options) ParseEventsActions() map[EventType]Action {
 			HookedSyscallEventType:           o.HookedSyscallEvent,
 			KernelParameterEventType:         o.KernelParameterEvent.Action,
 			PeriodicKernelParameterEventType: o.KernelParameterEvent.PeriodicAction,
+			RegisterCheckEventType:           o.RegisterCheckEvent,
 		} {
 			o.eventsAction[eventType] = action
 		}
@@ -132,6 +134,8 @@ const (
 	KernelParameterEventType
 	// PeriodicKernelParameterEventType is the event type of a periodic_kernel_parameter event
 	PeriodicKernelParameterEventType
+	// RegisterCheckEventType is the event type of a register_check event
+	RegisterCheckEventType
 	// MaxEventType is used internally to get the maximum number of events.
 	MaxEventType
 )
@@ -162,6 +166,8 @@ func (t EventType) String() string {
 		return "kernel_parameter"
 	case PeriodicKernelParameterEventType:
 		return "periodic_kernel_parameter"
+	case RegisterCheckEventType:
+		return "register_check"
 	default:
 		return fmt.Sprintf("EventType(%d)", t)
 	}
@@ -276,6 +282,7 @@ func AllProbesSelectors(events EventTypeList) []manager.ProbesSelector {
 	all := []manager.ProbesSelector{
 		&manager.AllOf{
 			Selectors: []manager.ProbesSelector{
+				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kprobe/prepare_kernel_cred", EBPFFuncName: "kprobe_prepare_kernel_cred"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "tracepoint/raw_syscalls/sys_exit", EBPFFuncName: "sys_exit"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "tracepoint/raw_syscalls/sys_enter_syscall", EBPFFuncName: "sys_enter_syscall"}},
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "perf_event/kernel_parameter_ticker", EBPFFuncName: "perf_event_kernel_parameter_ticker"}},
@@ -314,6 +321,13 @@ func AllProbes(events EventTypeList) []*manager.Probe {
 				UID:          KRIEUID,
 				EBPFSection:  "tracepoint/raw_syscalls/sys_exit",
 				EBPFFuncName: "sys_exit",
+			},
+		},
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          KRIEUID,
+				EBPFSection:  "kprobe/prepare_kernel_cred",
+				EBPFFuncName: "kprobe_prepare_kernel_cred",
 			},
 		},
 		{
@@ -424,6 +438,7 @@ type Event struct {
 	HookedSyscallEvent   HookedSyscallEvent
 	EventCheckEvent      EventCheckEvent
 	KernelParameterEvent KernelParameterEvent
+	RegisterCheckEvent   RegisterCheckEvent
 }
 
 // NewEvent returns a new Event instance
@@ -467,6 +482,7 @@ type EventSerializer struct {
 	*HookedSyscallEventSerializer   `json:"hooked_syscall,omitempty"`
 	*EventCheckEventSerializer      `json:"event_check,omitempty"`
 	*KernelParameterEventSerializer `json:"kernel_parameter,omitempty"`
+	*RegisterCheckEventSerializer   `json:"register_check,omitempty"`
 }
 
 // NewEventSerializer returns a new EventSerializer instance for the provided Event
@@ -499,6 +515,8 @@ func NewEventSerializer(event *Event) *EventSerializer {
 		serializer.HookedSyscallEventSerializer = NewHookedSyscallEventSerializer(&event.HookedSyscallEvent)
 	case KernelParameterEventType, PeriodicKernelParameterEventType:
 		serializer.KernelParameterEventSerializer = NewKernelParameterEventSerializer(&event.KernelParameterEvent)
+	case RegisterCheckEventType:
+		serializer.RegisterCheckEventSerializer = NewRegisterCheckEventSerializer(&event.RegisterCheckEvent)
 	}
 	return serializer
 }

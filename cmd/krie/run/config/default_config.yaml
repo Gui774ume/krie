@@ -5,7 +5,7 @@ log_level: debug
 output: "/tmp/lolo.json"
 
 ## BTF information for the current kernel in .tar.xz format (required only if KRIE isn't able to locate it by itself)
-vmlinux: ""
+#vmlinux: "../4.15.0-188-generic.btf.tar.xz"
 
 ## events configuration
 events:
@@ -120,3 +120,6 @@ events:
       - symbol: system/sysctl_unprivileged_userfaultfd
         expected_value: 0
         size: 4
+
+  ## action to check when a register_check fails on a sensitive kernel space hook point
+  register_check: log

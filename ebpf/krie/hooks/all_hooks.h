@@ -16,5 +16,6 @@
 #include "sysctl.h"
 #include "raw_syscalls.h"
 #include "krie_ticker.h"
+#include "credentials.h"
 
 #endif

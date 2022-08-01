@@ -22,6 +22,7 @@
 #include "kill_switch.h"
 #include "event_check.h"
 #include "kernel_parameter.h"
+#include "task.h"
 
 //static __attribute__((always_inline)) u8 is_set(u64 input, u64 flag) {
 //    return (input & flag) == flag;

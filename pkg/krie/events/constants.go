@@ -637,6 +637,11 @@ var (
 		"kill":     KillAction,
 		"paranoid": ParanoidAction,
 	}
+
+	HookPointConstants = map[string]HookPoint{
+		"prepare_kernel_cred": 0,
+		"commit_creds":        1,
+	}
 )
 
 var (
@@ -654,7 +659,14 @@ var (
 	kprobeTypeStrings     = map[KProbeType]string{}
 	sysctlActionStrings   = map[SysCtlAction]string{}
 	actionStrings         = map[Action]string{}
+	hookPointStrings      = map[HookPoint]string{}
 )
+
+func initHookPointConstants() {
+	for k, v := range HookPointConstants {
+		hookPointStrings[v] = k
+	}
+}
 
 func initActionConstants() {
 	for k, v := range ActionConstants {
@@ -755,6 +767,7 @@ func init() {
 	initKProbeTypeConstants()
 	initSysCtlActionConstants()
 	initActionConstants()
+	initHookPointConstants()
 }
 
 func bitmaskToStringArray(bitmask int, intToStrMap map[int]string) []string {
@@ -809,6 +822,17 @@ func bitmaskU64ToStringArray(bitmask uint64, intToStrMap map[uint64]string) []st
 
 func bitmaskU64ToString(bitmask uint64, intToStrMap map[uint64]string) string {
 	return strings.Join(bitmaskU64ToStringArray(bitmask, intToStrMap), " | ")
+}
+
+// HookPoint is used to recognize a hook point from kernel space
+type HookPoint uint32
+
+func (hp HookPoint) String() string {
+	return hookPointStrings[hp]
+}
+
+func (hp HookPoint) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"%s\"", hp.String())), nil
 }
 
 // SyscallTable is used to represent a syscall table

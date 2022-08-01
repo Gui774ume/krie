@@ -166,7 +166,7 @@ int cgroup_sysctl(struct bpf_sysctl *ctx) {
     }
 
     // run KRIE detections now
-    event->event.action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &event->event.type);
+    event->event.action = krie_run_event_check(ctx, &event->process, &event->event.type);
 
     // send event
     int perf_ret;

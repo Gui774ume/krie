@@ -25,6 +25,10 @@ import (
 )
 
 func addSysCtlProbes(all *[]*manager.Probe) {
+	// remove CGROUP_SYSCTL program if it isn't available yet
+	if !IsCgroupSysctlProgramAvailable() {
+		return
+	}
 	*all = append(*all, []*manager.Probe{
 		{
 			ProbeIdentificationPair: manager.ProbeIdentificationPair{
@@ -49,6 +53,10 @@ func addSysCtlRoutes(all *[]manager.TailCallRoute) {
 }
 
 func addSysCtlSelectors(all *[]manager.ProbesSelector) {
+	// remove CGROUP_SYSCTL program if it isn't available yet
+	if !IsCgroupSysctlProgramAvailable() {
+		return
+	}
 	*all = append(*all,
 		&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "cgroup/sysctl", EBPFFuncName: "cgroup_sysctl"}},
 		&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "kprobe/proc_sys_call_handler", EBPFFuncName: "kprobe_proc_sys_call_handler"}},

@@ -55,18 +55,15 @@ __attribute__((always_inline)) u32 run_kernel_parameter_check(void *ctx, struct 
     copy_process_ctx(&event->process, process_ctx);
     fetch_policy_or_block(event->event.type)
     event->event.action = policy->action;
+    u64 size = sizeof(*event);
+    event->event.cpu = bpf_get_smp_processor_id();
+    event->event.timestamp = bpf_ktime_get_ns();
 
     #pragma unroll
     for(int i = 0; i < KERNEL_PARAMETER_MAX; i++) {
-        if (i >= get_kernel_parameter_count()){
-            goto out;
-        }
         kernel_parameter_key = i;
         param = bpf_map_lookup_elem(&kernel_parameters, &kernel_parameter_key);
         if (param == NULL) {
-            goto out;
-        }
-        if (param->addr == 0) {
             goto out;
         }
         bpf_probe_read_kernel(&event->actual_value, (param->size & 7), (void *)param->addr);
@@ -75,7 +72,7 @@ __attribute__((always_inline)) u32 run_kernel_parameter_check(void *ctx, struct 
             triggered = 1;
             event->addr = param->addr;
             event->expected_value = param->expected_value;
-            send_event_ptr(ctx, event->event.type, event);
+            perf_ret = bpf_perf_event_output(ctx, &events, event->event.cpu, event, size);
             if (perf_ret == 0) {
                 param->last_sent = now;
             }

@@ -56,7 +56,9 @@ __attribute__((always_inline)) int enforce_policy(void *ctx, struct process_cont
             break;
         case KRIE_ACTION_BLOCK:
             if (program_type == KPROBE_PROG && hook_type == SYSCALL_HOOK) {
-                bpf_override_return(ctx, -1); // EPERM
+                if (get_krie_override_return()) {
+                    bpf_override_return(ctx, -1); // EPERM
+                }
             } else if (program_type == LSM_PROG) {
                 return -1; // EPERM
             } else if (program_type == CGROUP_SYSCTL_PROG) {
@@ -67,12 +69,13 @@ __attribute__((always_inline)) int enforce_policy(void *ctx, struct process_cont
         case KRIE_ACTION_PARANOID:
             if (program_type != CGROUP_SYSCTL_PROG) {
                 if (get_krie_send_signal()) {
-                    bpf_printk("killing pid:%d\n", process_ctx->pid);
                     bpf_send_signal(9); // SIGKILL
                 }
             }
             if (program_type == KPROBE_PROG && hook_type == SYSCALL_HOOK) {
-                bpf_override_return(ctx, -1); // EPERM
+                if (get_krie_override_return()) {
+                    bpf_override_return(ctx, -1); // EPERM
+                }
             }
             if (program_type == LSM_PROG) {
                 return -1; // EPERM

@@ -117,6 +117,7 @@ __attribute__((always_inline)) void copy_process_ctx(struct process_context_t *d
     for (u32 i = 0; i <= CGROUP_SUBSYS_COUNT; i++) {
         __builtin_memmove(&dst->cgroups[i], &src->cgroups[i], sizeof(struct cgroup_context_t));
     }
+    return;
 };
 
 #endif

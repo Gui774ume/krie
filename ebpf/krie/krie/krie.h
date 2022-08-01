@@ -23,42 +23,136 @@
 #include "event_check.h"
 #include "kernel_parameter.h"
 
-static __attribute__((always_inline)) u8 is_set(u64 input, u64 flag) {
-    return (input & flag) == flag;
-};
+//static __attribute__((always_inline)) u8 is_set(u64 input, u64 flag) {
+//    return (input & flag) == flag;
+//};
 
-static __attribute__((always_inline)) u32 krie_run_detections(void *ctx, u64 flag, struct process_context_t *process_ctx, void *data) {
+static __attribute__((always_inline)) u32 krie_run_event_check(void *ctx, struct process_context_t *process_ctx, void *data) {
     struct policy_t policy = {
         .action = KRIE_ACTION_NOP,
     };
     u32 check_action = KRIE_ACTION_NOP;
 
-    if (is_set(flag, KRIE_SYSCALL_TABLES_CHECK)) {
-        check_action = run_syscall_table_check(ctx);
-        if (policy.action < check_action) {
-            policy.action = check_action;
+    check_action = run_event_check(ctx, process_ctx, data);
+    if (policy.action < check_action) {
+        policy.action = check_action;
+    }
+
+    // set process kill switch
+    if (policy.action == KRIE_ACTION_KILL) {
+        set_process_kill_switch(&policy, process_ctx);
+    }
+
+    // set global kill switch
+    if (policy.action == KRIE_ACTION_PARANOID) {
+        set_global_kill_switch(&policy);
+    }
+
+    // check task kill switch
+    struct policy_t *kill_switch = get_process_kill_switch(process_ctx);
+    if (kill_switch) {
+        if (policy.action < kill_switch->action) {
+            policy.action = kill_switch->action;
         }
     }
 
-    if (is_set(flag, KRIE_SYSCALL_CHECK)) {
-        check_action = run_syscall_check(ctx, process_ctx, data);
-        if (policy.action < check_action) {
-            policy.action = check_action;
+    // check global kill switch
+    kill_switch = get_global_kill_switch();
+    if (kill_switch) {
+        if (policy.action < kill_switch->action) {
+            policy.action = kill_switch->action;
+        }
+    }
+    return policy.action;
+};
+
+static __attribute__((always_inline)) u32 krie_run_syscall_tables_detection(void *ctx, struct process_context_t *process_ctx) {
+    struct policy_t policy = {
+        .action = KRIE_ACTION_NOP,
+    };
+    u32 check_action = KRIE_ACTION_NOP;
+
+    check_action = run_syscall_table_check(ctx);
+    if (policy.action < check_action) {
+        policy.action = check_action;
+    }
+
+    // set process kill switch
+    if (policy.action == KRIE_ACTION_KILL) {
+        set_process_kill_switch(&policy, process_ctx);
+    }
+
+    // set global kill switch
+    if (policy.action == KRIE_ACTION_PARANOID) {
+        set_global_kill_switch(&policy);
+    }
+
+    // check task kill switch
+    struct policy_t *kill_switch = get_process_kill_switch(process_ctx);
+    if (kill_switch) {
+        if (policy.action < kill_switch->action) {
+            policy.action = kill_switch->action;
         }
     }
 
-    if (is_set(flag, KRIE_EVENT_CHECK)) {
-        check_action = run_event_check(ctx, process_ctx, data);
-        if (policy.action < check_action) {
-            policy.action = check_action;
+    // check global kill switch
+    kill_switch = get_global_kill_switch();
+    if (kill_switch) {
+        if (policy.action < kill_switch->action) {
+            policy.action = kill_switch->action;
+        }
+    }
+    return policy.action;
+};
+
+static __attribute__((always_inline)) u32 krie_run_syscall_detection(void *ctx, struct process_context_t *process_ctx, struct syscall_table_selector_t *input) {
+    struct policy_t policy = {
+        .action = KRIE_ACTION_NOP,
+    };
+    u32 check_action = KRIE_ACTION_NOP;
+
+    check_action = run_syscall_check(ctx, process_ctx, input);
+    if (policy.action < check_action) {
+        policy.action = check_action;
+    }
+
+    // set process kill switch
+    if (policy.action == KRIE_ACTION_KILL) {
+        set_process_kill_switch(&policy, process_ctx);
+    }
+
+    // set global kill switch
+    if (policy.action == KRIE_ACTION_PARANOID) {
+        set_global_kill_switch(&policy);
+    }
+
+    // check task kill switch
+    struct policy_t *kill_switch = get_process_kill_switch(process_ctx);
+    if (kill_switch) {
+        if (policy.action < kill_switch->action) {
+            policy.action = kill_switch->action;
         }
     }
 
-    if (is_set(flag, KRIE_KERNEL_PARAMETER) || is_set(flag, KRIE_PERIODIC_KERNEL_PARAMETER)) {
-        check_action = run_kernel_parameter_check(ctx, process_ctx, is_set(flag, KRIE_PERIODIC_KERNEL_PARAMETER));
-        if (policy.action < check_action) {
-            policy.action = check_action;
+    // check global kill switch
+    kill_switch = get_global_kill_switch();
+    if (kill_switch) {
+        if (policy.action < kill_switch->action) {
+            policy.action = kill_switch->action;
         }
+    }
+    return policy.action;
+};
+
+static __attribute__((always_inline)) u32 krie_run_kernel_parameter_detection(void *ctx, struct process_context_t *process_ctx) {
+    struct policy_t policy = {
+        .action = KRIE_ACTION_NOP,
+    };
+    u32 check_action = KRIE_ACTION_NOP;
+
+    check_action = run_kernel_parameter_check(ctx, process_ctx, 0);
+    if (policy.action < check_action) {
+        policy.action = check_action;
     }
 
     // set process kill switch

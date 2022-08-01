@@ -17,7 +17,10 @@ limitations under the License.
 package krie
 
 import (
+	"debug/elf"
 	"fmt"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Gui774ume/krie/pkg/krie/events"
 )
@@ -45,7 +48,8 @@ func (e *KRIE) loadKernelParameters() error {
 			}
 			address, ok := e.kernelSymbols[param.Symbol]
 			if !ok {
-				return fmt.Errorf("couldn't find %s kernel parameter", param.Symbol)
+				logrus.Errorf("couldn't find %s kernel parameter, this kernel parameter will be ignored", param.Symbol)
+				address = &elf.Symbol{}
 			}
 			param.Address = address.Value
 		}

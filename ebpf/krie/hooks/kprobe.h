@@ -60,7 +60,7 @@ int __attribute__((always_inline)) cache_kprobe(void *ctx, struct kprobe *p) {
     fill_process_context(&event->process);
 
     // we're about to allow this call to go through, double check with KRIE
-    event->event.action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &syscall->type);
+    event->event.action = krie_run_event_check(ctx, &event->process, &syscall->type);
     return krie_kprobe_enforce_policy(ctx, &event->process, event->event.action);
 }
 
@@ -100,7 +100,7 @@ int BPF_KRETPROBE(kretprobe_register_kprobe, int retval) {
     }
 
     // run KRIE detections
-    event->event.action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &event->event.type);
+    event->event.action = krie_run_event_check(ctx, &event->process, &event->event.type);
 
     int perf_ret;
     send_event_ptr(ctx, event->event.type, event);
@@ -143,7 +143,7 @@ int BPF_KRETPROBE(kretprobe___unregister_kprobe_top, int retval) {
     }
 
     // run KRIE detections
-    event->event.action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &event->event.type);
+    event->event.action = krie_run_event_check(ctx, &event->process, &event->event.type);
 
     int perf_ret;
     send_event_ptr(ctx, event->event.type, event);
@@ -186,7 +186,7 @@ int BPF_KRETPROBE(kretprobe_enable_kprobe, int retval) {
     }
 
     // run KRIE detections
-    event->event.action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &event->event.type);
+    event->event.action = krie_run_event_check(ctx, &event->process, &event->event.type);
 
     int perf_ret;
     send_event_ptr(ctx, event->event.type, event);
@@ -229,7 +229,7 @@ int BPF_KRETPROBE(kretprobe_disable_kprobe, int retval) {
     }
 
     // run KRIE detections
-    event->event.action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &event->event.type);
+    event->event.action = krie_run_event_check(ctx, &event->process, &event->event.type);
 
     int perf_ret;
     send_event_ptr(ctx, event->event.type, event);
@@ -256,7 +256,7 @@ int BPF_KPROBE(kprobe_register_kretprobe, struct kretprobe *kretp) {
     fill_process_context(&event->process);
 
     // we're about to allow this call to go through, double check with KRIE
-    u32 action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &syscall.type);
+    u32 action = krie_run_event_check(ctx, &event->process, &syscall.type);
     return krie_kprobe_enforce_policy(ctx, &event->process, action);
 };
 
@@ -280,7 +280,7 @@ int BPF_KPROBE(kprobe_unregister_kretprobe, struct kretprobe *rp) {
     fill_process_context(&event->process);
 
     // we're about to allow this call to go through, double check with KRIE
-    u32 action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &syscall.type);
+    u32 action = krie_run_event_check(ctx, &event->process, &syscall.type);
     return krie_kprobe_enforce_policy(ctx, &event->process, action);
 }
 
@@ -351,7 +351,7 @@ int BPF_KPROBE(kprobe_write_enabled_file_bool, struct file *file, char *user_buf
     fill_process_context(&event->process);
 
     // we're about to allow this call to go through, double check with KRIE
-    u32 action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &syscall.type);
+    u32 action = krie_run_event_check(ctx, &event->process, &syscall.type);
     return krie_kprobe_enforce_policy(ctx, &event->process, action);
 }
 
@@ -384,7 +384,7 @@ int BPF_KPROBE(kretprobe_write_enabled_file_bool, int retval) {
     }
 
     // run KRIE detections
-    event->event.action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &event->event.type);
+    event->event.action = krie_run_event_check(ctx, &event->process, &event->event.type);
 
     int perf_ret;
     send_event_ptr(ctx, event->event.type, event);

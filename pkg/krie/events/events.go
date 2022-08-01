@@ -252,17 +252,41 @@ func (etl *EventTypeList) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
+// AllExcludedFunctions returns the list of excluded functions
+func AllExcludedFunctions() []string {
+	var excluded []string
+
+	// remove CGROUP_SYSCTL program if it isn't available yet
+	if !IsCgroupSysctlProgramAvailable() {
+		excluded = append(excluded, []string{
+			"cgroup_sysctl",
+		}...)
+	}
+	if !HasOneMillionInstructionsAvailable() {
+		excluded = append(excluded, []string{
+			"perf_event_syscall_table_ticker",
+		}...)
+	}
+
+	return excluded
+}
+
 // AllProbesSelectors returns all the probes selectors
 func AllProbesSelectors(events EventTypeList) []manager.ProbesSelector {
 	all := []manager.ProbesSelector{
 		&manager.AllOf{
 			Selectors: []manager.ProbesSelector{
 				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "tracepoint/raw_syscalls/sys_exit", EBPFFuncName: "sys_exit"}},
-				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "tracepoint/raw_syscalls/sys_enter", EBPFFuncName: "sys_enter"}},
-				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "perf_event/cpu_clock", EBPFFuncName: "perf_event_cpu_clock"}},
+				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "tracepoint/raw_syscalls/sys_enter_syscall", EBPFFuncName: "sys_enter_syscall"}},
+				&manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "perf_event/kernel_parameter_ticker", EBPFFuncName: "perf_event_kernel_parameter_ticker"}},
 			},
 		},
 	}
+
+	if HasOneMillionInstructionsAvailable() {
+		all = append(all, &manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "perf_event/syscall_table_ticker", EBPFFuncName: "perf_event_syscall_table_ticker"}})
+	}
+
 	addAllKernelModuleProbesSelectors(&all, events)
 	if events.Contains(BPFEventType) {
 		addBPFProbesSelectors(&all)
@@ -295,15 +319,27 @@ func AllProbes(events EventTypeList) []*manager.Probe {
 		{
 			ProbeIdentificationPair: manager.ProbeIdentificationPair{
 				UID:          KRIEUID,
-				EBPFSection:  "tracepoint/raw_syscalls/sys_enter",
-				EBPFFuncName: "sys_enter",
+				EBPFSection:  "tracepoint/raw_syscalls/sys_enter_syscall",
+				EBPFFuncName: "sys_enter_syscall",
 			},
+			TracepointCategory: "raw_syscalls",
+			TracepointName:     "sys_enter",
 		},
 		{
 			ProbeIdentificationPair: manager.ProbeIdentificationPair{
 				UID:          KRIEUID,
-				EBPFSection:  "perf_event/cpu_clock",
-				EBPFFuncName: "perf_event_cpu_clock",
+				EBPFSection:  "perf_event/syscall_table_ticker",
+				EBPFFuncName: "perf_event_syscall_table_ticker",
+			},
+			SampleFrequency: 1,
+			PerfEventType:   unix.PERF_TYPE_SOFTWARE,
+			PerfEventConfig: unix.PERF_COUNT_SW_CPU_CLOCK,
+		},
+		{
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				UID:          KRIEUID,
+				EBPFSection:  "perf_event/kernel_parameter_ticker",
+				EBPFFuncName: "perf_event_kernel_parameter_ticker",
 			},
 			SampleFrequency: 1,
 			PerfEventType:   unix.PERF_TYPE_SOFTWARE,
@@ -332,7 +368,24 @@ func AllProbes(events EventTypeList) []*manager.Probe {
 
 // AllTailCallRoutes returns all the tail call routes
 func AllTailCallRoutes(events EventTypeList) []manager.TailCallRoute {
-	var all []manager.TailCallRoute
+	all := []manager.TailCallRoute{
+		{
+			ProgArrayName: "sys_enter_progs",
+			Key:           uint32(0),
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				EBPFSection:  "tracepoint/raw_syscalls/sys_enter_syscall_x32",
+				EBPFFuncName: "sys_enter_syscall_x32",
+			},
+		},
+		{
+			ProgArrayName: "sys_enter_progs",
+			Key:           uint32(1),
+			ProbeIdentificationPair: manager.ProbeIdentificationPair{
+				EBPFSection:  "tracepoint/raw_syscalls/sys_enter_kernel_parameter",
+				EBPFFuncName: "sys_enter_kernel_parameter",
+			},
+		},
+	}
 
 	addKernelModuleTailCallRoutes(&all, events)
 	if events.Contains(BPFEventType) {

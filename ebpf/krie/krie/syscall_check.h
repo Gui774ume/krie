@@ -162,6 +162,10 @@ __attribute__((always_inline)) u32 run_syscall_check(void *ctx, struct process_c
             input.syscall_table_sym = get_kallsyms_addr(KALLSYMS_IA32_SYS_CALL_TABLE);
             break;
     }
+    if (input.syscall_table_sym == 0) {
+        // this syscall table doesn't exist
+        return KRIE_ACTION_NOP;
+    }
 
     u8 hooked = 0;
     check_syscall(ctx, &input, &hooked);

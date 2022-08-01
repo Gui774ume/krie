@@ -15,6 +15,6 @@
 #include "kprobe.h"
 #include "sysctl.h"
 #include "raw_syscalls.h"
-#include "krie_timer.h"
+#include "krie_ticker.h"
 
 #endif

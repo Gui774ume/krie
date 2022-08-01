@@ -71,6 +71,9 @@ func (e *KRIE) pushKernelSymbols() error {
 	for key, symbol := range krieSymbols {
 		address, ok := e.kernelSymbols[symbol]
 		if !ok {
+			if symbol == "system/x32_sys_call_table" {
+				continue
+			}
 			return fmt.Errorf("couldn't find %s symbol", symbol)
 		}
 		if err := e.kallsymsMap.Put(uint32(key), &address.Value); err != nil {

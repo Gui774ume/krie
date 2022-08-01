@@ -45,7 +45,7 @@ SYSCALL_KPROBE3(setsockopt, int, fd, int, level, int, optname) {
         fill_process_context(&event->process);
 
         // we're about to allow this call to go through, double check with KRIE
-        u32 action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &syscall.type);
+        u32 action = krie_run_event_check(ctx, &event->process, &syscall.type);
 
         // pop cache if need be
         if (action > KRIE_ACTION_LOG) {
@@ -82,7 +82,7 @@ __attribute__((always_inline)) struct process_context_t *sys_setsockopt_ret(void
         }
 
         // run KRIE detections
-        event->event.action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &event->event.type);
+        event->event.action = krie_run_event_check(ctx, &event->process, &event->event.type);
         *action = event->event.action;
 
         // send event

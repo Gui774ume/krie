@@ -47,24 +47,11 @@ struct {
 	__uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
 } events SEC(".maps");
 
-struct {
-	__uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-	__type(key, u32);
-	__type(value, struct perf_map_stats_t);
-	__uint(max_entries, EVENT_MAX);
-} events_stats SEC(".maps");
-
 #define send_event_with_size_ptr_perf(ctx, event_type, kernel_event, kernel_event_size)                                \
     kernel_event->event.type = event_type;                                                                             \
     kernel_event->event.cpu = bpf_get_smp_processor_id();                                                              \
     kernel_event->event.timestamp = bpf_ktime_get_ns();                                                                \
     perf_ret = bpf_perf_event_output(ctx, &events, kernel_event->event.cpu, kernel_event, kernel_event_size);          \
-
-#define send_event_with_size_ptr_ringbuf(ctx, event_type, kernel_event, kernel_event_size)                             \
-    kernel_event->event.type = event_type;                                                                             \
-    kernel_event->event.cpu = bpf_get_smp_processor_id();                                                              \
-    kernel_event->event.timestamp = bpf_ktime_get_ns();                                                                \
-    perf_ret = bpf_ringbuf_output(&events, kernel_event, kernel_event_size, 0);                                        \
 
 #define send_event_with_size_perf(ctx, event_type, kernel_event, kernel_event_size)                                    \
     kernel_event.event.type = event_type;                                                                              \
@@ -72,48 +59,18 @@ struct {
     kernel_event.event.timestamp = bpf_ktime_get_ns();                                                                 \
     perf_ret = bpf_perf_event_output(ctx, &events, kernel_event.event.cpu, &kernel_event, kernel_event_size);          \
 
-#define send_event_with_size_ringbuf(ctx, event_type, kernel_event, kernel_event_size)                                 \
-    kernel_event.event.type = event_type;                                                                              \
-    kernel_event.event.cpu = bpf_get_smp_processor_id();                                                               \
-    kernel_event.event.timestamp = bpf_ktime_get_ns();                                                                 \
-    perf_ret = bpf_ringbuf_output(&events, &kernel_event, kernel_event_size, 0);                                       \
-
 #define send_event(ctx, event_type, kernel_event)                                                                      \
     u64 size = sizeof(kernel_event);                                                                                   \
-    u64 use_ring_buffer;                                                                                               \
-    LOAD_CONSTANT("use_ring_buffer", use_ring_buffer);                                                                 \
-    if (use_ring_buffer) {                                                                                             \
-        send_event_with_size_ringbuf(ctx, event_type, kernel_event, size)                                              \
-    } else {                                                                                                           \
-        send_event_with_size_perf(ctx, event_type, kernel_event, size)                                                 \
-    }                                                                                                                  \
+    send_event_with_size_perf(ctx, event_type, kernel_event, size)                                                     \
 
 #define send_event_with_size(ctx, event_type, kernel_event, size)                                                      \
-    u64 use_ring_buffer;                                                                                               \
-    LOAD_CONSTANT("use_ring_buffer", use_ring_buffer);                                                                 \
-    if (use_ring_buffer) {                                                                                             \
-        send_event_with_size_ringbuf(ctx, event_type, kernel_event, size)                                              \
-    } else {                                                                                                           \
-        send_event_with_size_perf(ctx, event_type, kernel_event, size)                                                 \
-    }                                                                                                                  \
+    send_event_with_size_perf(ctx, event_type, kernel_event, size)                                                     \
 
 #define send_event_ptr(ctx, event_type, kernel_event)                                                                  \
     u64 size = sizeof(*kernel_event);                                                                                  \
-    u64 use_ring_buffer;                                                                                               \
-    LOAD_CONSTANT("use_ring_buffer", use_ring_buffer);                                                                 \
-    if (use_ring_buffer) {                                                                                             \
-        send_event_with_size_ptr_ringbuf(ctx, event_type, kernel_event, size)                                          \
-    } else {                                                                                                           \
-        send_event_with_size_ptr_perf(ctx, event_type, kernel_event, size)                                             \
-    }                                                                                                                  \
+    send_event_with_size_ptr_perf(ctx, event_type, kernel_event, size)                                                 \
 
 #define send_event_with_size_ptr(ctx, event_type, kernel_event, size)                                                  \
-    u64 use_ring_buffer;                                                                                               \
-    LOAD_CONSTANT("use_ring_buffer", use_ring_buffer);                                                                 \
-    if (use_ring_buffer) {                                                                                             \
-        send_event_with_size_ptr_ringbuf(ctx, event_type, kernel_event, size)                                          \
-    } else {                                                                                                           \
-        send_event_with_size_ptr_perf(ctx, event_type, kernel_event, size)                                             \
-    }                                                                                                                  \
+    send_event_with_size_ptr_perf(ctx, event_type, kernel_event, size)                                                 \
 
 #endif

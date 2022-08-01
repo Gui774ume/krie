@@ -89,7 +89,7 @@ SYSCALL_KPROBE3(bpf, int, cmd, union bpf_attr_def*, uattr, unsigned int, size) {
     fill_process_context(&event->process);
 
     // we're about to allow this call to go through, double check with KRIE
-    u32 action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &syscall.type);
+    u32 action = krie_run_event_check(ctx, &event->process, &syscall.type);
 
     // pop cache if need be
     if (action > KRIE_ACTION_LOG) {
@@ -281,7 +281,7 @@ __attribute__((always_inline)) struct process_context_t *send_bpf_event(void *ct
     }
 
     // run KRIE detections
-    event->event.action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &event->event.type);
+    event->event.action = krie_run_event_check(ctx, &event->process, &event->event.type);
     *action = event->event.action;
 
     // send event

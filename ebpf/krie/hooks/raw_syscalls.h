@@ -31,8 +31,18 @@ __attribute__((always_inline)) u32 get_active_syscall_table(struct tracepoint_ra
 	return KALLSYMS_SYS_CALL_TABLE;
 };
 
-SEC("tracepoint/raw_syscalls/sys_enter")
-int sys_enter(struct tracepoint_raw_syscalls_sys_enter_t *args) {
+#define SYS_ENTER_SYSCALL_X32_PROG 0
+#define SYS_ENTER_KERNEL_PARAMETER_PROG 1
+
+struct {
+	__uint(type, BPF_MAP_TYPE_PROG_ARRAY);
+	__type(key, u32);
+	__type(value, u32);
+	__uint(max_entries, 2);
+} sys_enter_progs SEC(".maps");
+
+SEC("tracepoint/raw_syscalls/sys_enter_syscall")
+int sys_enter_syscall(struct tracepoint_raw_syscalls_sys_enter_t *args) {
     // create process context for KRIE detection
     struct process_context_t *process_ctx = new_process_context();
     if (process_ctx == NULL) {
@@ -47,22 +57,54 @@ int sys_enter(struct tracepoint_raw_syscalls_sys_enter_t *args) {
         .syscall_table = get_active_syscall_table(args),
     };
 
-	u32 action = krie_run_detections(args, KRIE_SYSCALL_CHECK | KRIE_KERNEL_PARAMETER, process_ctx, &input);
+	u32 action = krie_run_syscall_detection(args, process_ctx, &input);
+    krie_tp_enforce_policy(args, process_ctx, action);
 
-	// if this wasn't an ia32 syscall, check the X32 table too
+    // jump to the next check
+    bpf_tail_call(args, &sys_enter_progs, SYS_ENTER_SYSCALL_X32_PROG);
+    return 0;
+}
+
+SEC("tracepoint/raw_syscalls/sys_enter_syscall_x32")
+int sys_enter_syscall_x32(struct tracepoint_raw_syscalls_sys_enter_t *args) {
+    // create process context for KRIE detection
+    struct process_context_t *process_ctx = new_process_context();
+    if (process_ctx == NULL) {
+        // should never happen
+        return 0;
+    }
+    fill_process_context(process_ctx);
+
+    // prepare krie check
+    struct syscall_table_selector_t input = {
+        .syscall_nr = (u32)args->id,
+        .syscall_table = get_active_syscall_table(args),
+    };
+
 	if (input.syscall_table == KALLSYMS_SYS_CALL_TABLE) {
-	    // check the x32 table too
+	    // check the x32 table
 	    input.syscall_table = KALLSYMS_X32_SYS_CALL_TABLE;
 
-	    u32 x32_action = KRIE_ACTION_NOP;
-	    x32_action = krie_run_detections(args, KRIE_SYSCALL_CHECK, process_ctx, &input);
-
-        // choose the most restrictive outcome of the 2 checks
-        if (action < x32_action) {
-            action = x32_action;
-        }
+        u32 action = krie_run_syscall_detection(args, process_ctx, &input);
+        krie_tp_enforce_policy(args, process_ctx, action);
     }
 
+    // jump to the next check
+    bpf_tail_call(args, &sys_enter_progs, SYS_ENTER_KERNEL_PARAMETER_PROG);
+    return 0;
+}
+
+SEC("tracepoint/raw_syscalls/sys_enter_kernel_parameter")
+int sys_enter_kernel_parameter(struct tracepoint_raw_syscalls_sys_enter_t *args) {
+    // create process context for KRIE detection
+    struct process_context_t *process_ctx = new_process_context();
+    if (process_ctx == NULL) {
+        // should never happen
+        return 0;
+    }
+    fill_process_context(process_ctx);
+
+	u32 action = krie_run_kernel_parameter_detection(args, process_ctx);
     return krie_tp_enforce_policy(args, process_ctx, action);
 }
 
@@ -100,7 +142,7 @@ int sys_exit(struct tracepoint_raw_syscalls_sys_exit_t *args) {
     fill_process_context(process_ctx);
 
     // we're about to allow this call to go through, double check with KRIE
-    u32 action = krie_run_detections(args, KRIE_NO_CHECK, process_ctx, NULL);
+    u32 action = krie_run_event_check(args, process_ctx, NULL);
     return krie_tp_enforce_policy(args, process_ctx, action);
 }
 

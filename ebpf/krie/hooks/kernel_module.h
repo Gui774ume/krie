@@ -38,7 +38,7 @@ int __attribute__((always_inline)) trace_init_module(void *ctx, u32 loaded_from_
     fill_process_context(&event->process);
 
     // we're about to allow this call to go through, double check with KRIE
-    u32 action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &syscall.type);
+    u32 action = krie_run_event_check(ctx, &event->process, &syscall.type);
 
     // pop cache if need be
     if (action > KRIE_ACTION_LOG) {
@@ -73,7 +73,7 @@ int __attribute__((always_inline)) trace_module(void *ctx, struct module *mod) {
     fill_process_context(&event->process);
 
     // we're about to allow this call to go through, double check with KRIE
-    u32 action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &syscall->type);
+    u32 action = krie_run_event_check(ctx, &event->process, &syscall->type);
     return krie_kprobe_enforce_policy(ctx, &event->process, action);
 };
 
@@ -111,7 +111,7 @@ __attribute__((always_inline)) struct process_context_t *trace_init_module_ret(v
     }
 
     // run KRIE detections
-    event->event.action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &event->event.type);
+    event->event.action = krie_run_event_check(ctx, &event->process, &event->event.type);
     *action = event->event.action;
 
     int perf_ret;
@@ -189,7 +189,7 @@ SYSCALL_KPROBE1(delete_module, char *, name_user) {
     fill_process_context(&event->process);
 
     // we're about to allow this call to go through, double check with KRIE
-    u32 action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &syscall.type);
+    u32 action = krie_run_event_check(ctx, &event->process, &syscall.type);
 
     // pop cache if need be
     if (action > KRIE_ACTION_LOG) {
@@ -221,7 +221,7 @@ __attribute__((always_inline)) struct process_context_t *trace_delete_module_ret
     }
 
     // run KRIE detections
-    event->event.action = krie_run_detections(ctx, KRIE_EVENT_CHECK, &event->process, &event->event.type);
+    event->event.action = krie_run_event_check(ctx, &event->process, &event->event.type);
     *action = event->event.action;
 
     int perf_ret;

@@ -49,7 +49,7 @@ func (e *KRIE) startManager() error {
 
 	// load vmlinux
 	if err = e.loadVMLinux(); err != nil {
-		return fmt.Errorf("couldn't load kernel BTF specs, please try to provide --vmlinux: %w", err)
+		return fmt.Errorf("couldn't load kernel BTF specs, please try to provide one in the configuration: %w", err)
 	}
 
 	// initialize the manager
@@ -144,6 +144,10 @@ func (e *KRIE) prepareManager() {
 				Value: events.IsBPFSendSignalHelperAvailable(),
 			},
 			{
+				Name:  "krie_override_return",
+				Value: events.IsBPFOverrideReturnAvailable(),
+			},
+			{
 				Name:  "kernel_parameter_ticker",
 				Value: uint64(e.options.Events.KernelParameterEvent.Ticker * time.Second.Nanoseconds()),
 			},
@@ -152,7 +156,8 @@ func (e *KRIE) prepareManager() {
 				Value: uint64(len(e.options.Events.KernelParameterEvent.List)),
 			},
 		},
-		ActivatedProbes: events.AllProbesSelectors(e.options.Events.ActivatedEventTypes()),
+		ActivatedProbes:   events.AllProbesSelectors(e.options.Events.ActivatedEventTypes()),
+		ExcludedFunctions: events.AllExcludedFunctions(),
 	}
 	e.manager = &manager.Manager{
 		Probes: events.AllProbes(e.options.Events.ActivatedEventTypes()),

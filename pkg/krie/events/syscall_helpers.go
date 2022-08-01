@@ -112,6 +112,33 @@ func IsBPFSendSignalHelperAvailable() uint64 {
 	return uint64(0)
 }
 
+// IsBPFOverrideReturnAvailable returns true if the bpf_override_return helper is available in the current kernel
+func IsBPFOverrideReturnAvailable() uint64 {
+	_ = resolveCurrentHost()
+	if currentHost != nil && (currentHost.Code >= kernel.Kernel4_16 || currentHost.IsRH7Kernel() || currentHost.IsRH8Kernel()) {
+		return uint64(1)
+	}
+	return uint64(0)
+}
+
+// IsCgroupSysctlProgramAvailable returns true if the cgroup sysctl program type is available in the current kernel
+func IsCgroupSysctlProgramAvailable() bool {
+	_ = resolveCurrentHost()
+	if currentHost != nil && (currentHost.Code >= kernel.Kernel5_2) {
+		return true
+	}
+	return false
+}
+
+// HasOneMillionInstructionsAvailable returns true if the current kernel accepts programs with 1 million instructions
+func HasOneMillionInstructionsAvailable() bool {
+	_ = resolveCurrentHost()
+	if currentHost != nil && (currentHost.Code >= kernel.Kernel5_3) {
+		return true
+	}
+	return false
+}
+
 // GetCheckHelperCallInputType returns 1 or 2 defending on the prototype of the check_helper_call function in the current kernel
 func GetCheckHelperCallInputType() uint64 {
 	input := uint64(1)

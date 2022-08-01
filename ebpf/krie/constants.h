@@ -43,6 +43,12 @@ __attribute__((always_inline)) u64 get_krie_send_signal() {
     return krie_send_signal;
 };
 
+__attribute__((always_inline)) u64 get_krie_override_return() {
+    u64 krie_override_return;
+    LOAD_CONSTANT("krie_override_return", krie_override_return);
+    return krie_override_return;
+};
+
 __attribute__((always_inline)) u64 get_kernel_parameter_ticker() {
     u64 kernel_parameter_ticker;
     LOAD_CONSTANT("kernel_parameter_ticker", kernel_parameter_ticker);

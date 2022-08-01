@@ -29,7 +29,7 @@ import (
 type Options struct {
 	LogLevel LogLevel `yaml:"log_level"`
 	Output   string   `yaml:"output"`
-	VMLinux  string   `yaml:"vm_linux"`
+	VMLinux  string   `yaml:"vmlinux"`
 
 	EventHandler func(data []byte) error `yaml:"-"`
 

@@ -23,7 +23,7 @@ import (
 )
 
 // MaxKernelParameterCount is the hardcoded maximum count of kernel parameters that KRIE can check
-const MaxKernelParameterCount = 1000
+const MaxKernelParameterCount = 25
 
 // KernelParameterEvent represents a kernel_parameter event
 type KernelParameterEvent struct {

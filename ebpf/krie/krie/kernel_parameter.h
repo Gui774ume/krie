@@ -26,7 +26,7 @@ struct kernel_parameter_event_t {
 
 memory_factory(kernel_parameter_event)
 
-#define KERNEL_PARAMETER_MAX 50
+#define KERNEL_PARAMETER_MAX 25
 
 struct {
 	__uint(type, BPF_MAP_TYPE_HASH);

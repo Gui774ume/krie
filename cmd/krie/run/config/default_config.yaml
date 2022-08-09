@@ -13,23 +13,23 @@ events:
   init_module: log
 
   ## action taken when an delete_module event is detected
-  delete_module: nop
+  delete_module: log
 
   ## action taken when a bpf event is detected
-  bpf: nop
+  bpf: log
 
   ## action taken when a bpf_filter event is detected
-  bpf_filter: nop
+  bpf_filter: log
 
   ## action taken when a ptrace event is detected
-  ptrace: nop
+  ptrace: log
 
   ## action taken when a kprobe event is detected
-  kprobe: nop
+  kprobe: log
 
   ## action taken when a sysctl event is detected
   sysctl:
-    action: nop
+    action: log
 
     ## Default settings for sysctl
     sysctl_default:
@@ -51,7 +51,7 @@ events:
 
   ## kernel_parameter event configuration
   kernel_parameter:
-    action: nop
+    action: log
     periodic_action: log
     ticker: 1 # sends at most one event every [ticker] second(s)
     list:

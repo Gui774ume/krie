@@ -2,10 +2,10 @@
 log_level: debug
 
 ## JSON output file, leave empty to disable JSON output.
-output: "/tmp/lolo.json"
+output: "/tmp/krie.json"
 
 ## BTF information for the current kernel in .tar.xz format (required only if KRIE isn't able to locate it by itself)
-#vmlinux: "../4.15.0-188-generic.btf.tar.xz"
+vmlinux: ""
 
 ## events configuration
 events:

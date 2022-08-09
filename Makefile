@@ -1,6 +1,8 @@
-all: build-ebpf build-ebpf-syscall-wrapper generate generate-serializer build install
+all: build-ebpf build install
 
-build-ebpf:
+build-ebpf: build-ebpf-no-wrapper build-ebpf-syscall-wrapper generate
+
+build-ebpf-no-wrapper:
 	mkdir -p ebpf/bin
 	clang-14 -D__KERNEL__ -DCONFIG_64BIT -D__ASM_SYSREG_H -D__x86_64__ -D__BPF_TRACING__ -DKBUILD_MODNAME=\"krie\" \
 		-Wno-unused-value \
@@ -40,16 +42,11 @@ build-ebpf-syscall-wrapper:
 
 generate:
 	go run github.com/shuLhan/go-bindata/cmd/go-bindata -pkg assets -prefix "ebpf/bin" -o "pkg/assets/probe.go" "ebpf/bin/probe_syscall_wrapper.o" "ebpf/bin/probe.o"
-
-generate-serializer:
 	go generate ./...
 
 build:
 	mkdir -p bin/
 	go build -o bin/ ./cmd/...
-
-run:
-	sudo ./bin/krie --log-level debug
 
 install:
 	sudo cp ./bin/* /usr/bin/

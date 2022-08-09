@@ -36,5 +36,5 @@ func init() {
 	KRIE.Flags().Var(
 		NewKRIEOptionsSanitizer(&options, "config"),
 		"config",
-		"KRIE config file, command line arguments erase the content of the config file")
+		"KRIe config file")
 }

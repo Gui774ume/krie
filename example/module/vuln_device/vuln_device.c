@@ -8,6 +8,7 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <asm/uaccess.h>
+#include <linux/device.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Guillaume Fournier");
@@ -38,6 +39,8 @@ static int device_open(struct inode *, struct file *);
 static int device_release(struct inode *, struct file *);
 static ssize_t device_read(struct file *, char *, size_t, loff_t *);
 static ssize_t device_write(struct file *, const char *, size_t, loff_t *);
+static long device_ioctl(struct file *, unsigned int, unsigned long);
+static struct class *class;
 static int major_num;
 static int device_open_count = 0;
 unsigned long *fn_array[8];
@@ -46,7 +49,8 @@ static struct file_operations ops = {
     .read = device_read,
     .write = device_write,
     .open = device_open,
-    .release = device_release
+    .release = device_release,
+	.unlocked_ioctl = device_ioctl
 };
 
 static ssize_t device_read(struct file *flip, char *buffer, size_t len, loff_t *offset) {
@@ -64,6 +68,29 @@ static ssize_t device_read(struct file *flip, char *buffer, size_t len, loff_t *
     return bytes_read;
 }
 
+struct ioctl_req {
+	unsigned long offset;
+};
+
+static long device_ioctl(struct file *file, unsigned int cmd, unsigned long args) {
+	struct ioctl_req *req;
+	void (*fn)(void);
+
+	switch(cmd) {
+	case 0:
+		req = (struct ioctl_req *)args;
+//		printk(KERN_INFO "ioctl offset = %lx\n", req->offset);
+		fn = (void *)&fn_array[0] - req->offset;
+//        printk(KERN_INFO "jumping now to 0x%lx\n", (void*)fn);
+		fn();
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
 static ssize_t device_write(struct file *flip, const char *buffer, size_t len, loff_t *offset) {
     char *p;
     p = kmalloc(len + 1, GFP_KERNEL);
@@ -76,32 +103,17 @@ static ssize_t device_write(struct file *flip, const char *buffer, size_t len, l
         return ERR_PTR(-EFAULT);
     }
 
-//    printk(KERN_INFO "executing\n");
-    commit_creds(prepare_kernel_cred(0));
+//    printk(KERN_INFO "executing commit_creds\n");
+//    commit_creds(prepare_kernel_cred(0));
 //    printk(KERN_INFO "done\n");
-
-    void (*fn)(void);
-    fn = (void *)&fn_array[-0x3b7dee5];
-    fn();
-
-    u64 *my_ptr = (void*)0xa2abcd98;
-    int i = 0;
-    for (i=0; i < 20; i++) {
-        printk("ins: %llx\n", *my_ptr);
-        my_ptr++;
-    }
-
-//    int (*fn)(struct cred *);
-//    fn = (void *)((long unsigned int)&fn_array[0] - (long unsigned int)0x171da370);
-//    fn = (void*)&fn_array[- 0x2e3b46e];
 
     return len;
 }
 
 static int device_open(struct inode *inode, struct file *file) {
-//    if (device_open_count) {
-//        return -EBUSY;
-//    }
+    if (device_open_count) {
+        return -EBUSY;
+    }
     device_open_count++;
     try_module_get(THIS_MODULE);
     info_buffer_ptr = info_buffer;
@@ -151,7 +163,7 @@ asmlinkage int our_sys_open(const char *filename,
 }
 
 static int __init krie_vuln_device_init(void) {
-    major_num = register_chrdev(0, "vuln_device", &ops);
+    major_num = register_chrdev(0, DEVICE_NAME, &ops);
     if (major_num < 0) {
         printk(KERN_ALERT "couldn't register device: %d\n", major_num);
         return major_num;
@@ -161,35 +173,41 @@ static int __init krie_vuln_device_init(void) {
     info_msg_len = sprintf(info_buffer, "{\"major_num\": %d, \"@fn_array\": \"0x%lx\"}\n", major_num, (long unsigned int)&fn_array[0]);
     info_buffer_ptr = info_buffer;
 
-    sys_call_table = (u64 *)0xffffffff91c00300;
+	class = class_create(THIS_MODULE, DEVICE_NAME);
+	device_create(class, NULL, MKDEV(major_num, 0), NULL, DEVICE_NAME);
 
-    // disable write_protect and hook syscall
-    original_cr0 = read_cr0();
-    printk(KERN_INFO "write_protect: %d\n", (original_cr0 & 0x10000) == 0x10000);
-    write_forced_cr0(original_cr0 & ~0x10000);
-    /* Keep a pointer to the original function in
-    * original_call, and then replace the system call
-    * in the system call table with our_sys_open */
-    original_call = sys_call_table[__NR_open];
-    sys_call_table[__NR_open] = our_sys_open;
-    write_forced_cr0((original_cr0 | 0x10000));
-
-    printk(KERN_INFO "open is at 0x%x\n", original_call);
-    printk(KERN_INFO "jumping to 0x%x\n", our_sys_open);
+//    sys_call_table = (u64 *)0xffffffff91c00300;
+//
+//    // disable write_protect and hook syscall
+//    original_cr0 = read_cr0();
+//    printk(KERN_INFO "write_protect: %d\n", (original_cr0 & 0x10000) == 0x10000);
+//    write_forced_cr0(original_cr0 & ~0x10000);
+//    /* Keep a pointer to the original function in
+//    * original_call, and then replace the system call
+//    * in the system call table with our_sys_open */
+//    original_call = sys_call_table[__NR_open];
+//    sys_call_table[__NR_open] = our_sys_open;
+//    write_forced_cr0((original_cr0 | 0x10000));
+//
+//    printk(KERN_INFO "open is at 0x%x\n", original_call);
+//    printk(KERN_INFO "jumping to 0x%x\n", our_sys_open);
 
     return 0;
 }
 
 static void __exit krie_vuln_device_exit(void) {
+	device_destroy(class, MKDEV(major_num, 0));
+	class_unregister(class);
+	class_destroy(class);
     unregister_chrdev(major_num, DEVICE_NAME);
     printk(KERN_INFO "[vuln_device] unloaded !\n");
 
-    /* Return the system call back to normal */
-    if (sys_call_table[__NR_open] == our_sys_open) {
-        write_forced_cr0(original_cr0 & ~0x10000);
-        sys_call_table[__NR_open] = original_call;
-        write_forced_cr0((original_cr0 | 0x10000));
-    }
+//    /* Return the system call back to normal */
+//    if (sys_call_table[__NR_open] == our_sys_open) {
+//        write_forced_cr0(original_cr0 & ~0x10000);
+//        sys_call_table[__NR_open] = original_call;
+//        write_forced_cr0((original_cr0 | 0x10000));
+//    }
 
 }
 

@@ -1834,7 +1834,7 @@ const (
 type MemoryPointer uint64
 
 func (mp MemoryPointer) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("0x%x", mp)), nil
+	return []byte(fmt.Sprintf("\"0x%x\"", mp)), nil
 }
 
 // KProbeType kprobe type

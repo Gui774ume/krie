@@ -294,6 +294,10 @@ func AllProbesSelectors(events EventTypeList) []manager.ProbesSelector {
 		all = append(all, &manager.ProbeSelector{ProbeIdentificationPair: manager.ProbeIdentificationPair{UID: KRIEUID, EBPFSection: "perf_event/syscall_table_ticker", EBPFFuncName: "perf_event_syscall_table_ticker"}})
 	}
 
+	if IsBPFLSMAvailable() {
+		addLSMSelectors(&all)
+	}
+
 	addAllKernelModuleProbesSelectors(&all, events)
 	if events.Contains(BPFEventType) {
 		addBPFProbesSelectors(&all)
@@ -360,6 +364,11 @@ func AllProbes(events EventTypeList) []*manager.Probe {
 			PerfEventConfig: unix.PERF_COUNT_SW_CPU_CLOCK,
 		},
 	}
+
+	if IsBPFLSMAvailable() {
+		addLSMProbes(&all)
+	}
+
 	addKernelModuleProbes(&all, events)
 	if events.Contains(BPFEventType) {
 		addBPFProbes(&all)

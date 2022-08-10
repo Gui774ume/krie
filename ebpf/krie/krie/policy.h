@@ -107,6 +107,10 @@ __attribute__((always_inline)) int krie_kprobe_enforce_policy(void *ctx, struct 
     return enforce_policy(ctx, process_ctx, action, KPROBE_PROG, SYMBOL_HOOK);
 };
 
+__attribute__((always_inline)) int krie_lsm_enforce_policy(void *ctx, struct process_context_t *process_ctx, u32 action) {
+    return enforce_policy(ctx, process_ctx, action, LSM_PROG, SYMBOL_HOOK);
+};
+
 #define fetch_policy_or_block(check)                                                                                   \
     struct policy_t new_policy = {};                                                                                   \
     struct policy_t *policy = get_policy(check);                                                                       \

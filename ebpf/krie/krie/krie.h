@@ -28,6 +28,29 @@
 //    return (input & flag) == flag;
 //};
 
+static __attribute__((always_inline)) u32 krie_run_context_check(void *ctx, struct process_context_t *process_ctx) {
+    struct policy_t policy = {
+        .action = KRIE_ACTION_NOP,
+    };
+
+    // check task kill switch
+    struct policy_t *kill_switch = get_process_kill_switch(process_ctx);
+    if (kill_switch) {
+        if (policy.action < kill_switch->action) {
+            policy.action = kill_switch->action;
+        }
+    }
+
+    // check global kill switch
+    kill_switch = get_global_kill_switch();
+    if (kill_switch) {
+        if (policy.action < kill_switch->action) {
+            policy.action = kill_switch->action;
+        }
+    }
+    return policy.action;
+};
+
 static __attribute__((always_inline)) u32 krie_run_event_check(void *ctx, struct process_context_t *process_ctx, void *data) {
     struct policy_t policy = {
         .action = KRIE_ACTION_NOP,

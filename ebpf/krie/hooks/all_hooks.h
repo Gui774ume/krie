@@ -17,5 +17,6 @@
 #include "raw_syscalls.h"
 #include "krie_ticker.h"
 #include "credentials.h"
+#include "lsm.h"
 
 #endif

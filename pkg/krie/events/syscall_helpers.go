@@ -139,6 +139,14 @@ func HasOneMillionInstructionsAvailable() bool {
 	return false
 }
 
+func IsBPFLSMAvailable() bool {
+	_ = resolveCurrentHost()
+	if currentHost != nil && (currentHost.Code >= kernel.Kernel5_7) {
+		return true
+	}
+	return false
+}
+
 // GetCheckHelperCallInputType returns 1 or 2 defending on the prototype of the check_helper_call function in the current kernel
 func GetCheckHelperCallInputType() uint64 {
 	input := uint64(1)

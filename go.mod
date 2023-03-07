@@ -17,8 +17,8 @@ require (
 	github.com/smira/go-xz v0.0.0-20220607140411-c2a07d4bedda
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.8.0
-	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f
-	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b
+	golang.org/x/net v0.7.0
+	golang.org/x/sys v0.5.0
 	golang.org/x/tools v0.1.11
 	gopkg.in/yaml.v3 v3.0.1
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.65

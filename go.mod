@@ -1,6 +1,6 @@
 module github.com/Gui774ume/krie
 
-go 1.18
+go 1.20
 
 require (
 	github.com/DataDog/btf-internals v0.0.0-20220510090419-14c22a91224c
@@ -17,9 +17,9 @@ require (
 	github.com/smira/go-xz v0.0.0-20220607140411-c2a07d4bedda
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.8.0
-	golang.org/x/net v0.7.0
-	golang.org/x/sys v0.5.0
-	golang.org/x/tools v0.1.11
+	golang.org/x/net v0.18.0
+	golang.org/x/sys v0.14.0
+	golang.org/x/tools v0.15.0
 	gopkg.in/yaml.v3 v3.0.1
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.65
 )
@@ -44,7 +44,7 @@ require (
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220613132600-b0d781184e0d // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
-	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
+	golang.org/x/mod v0.14.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	honnef.co/go/tools v0.3.2 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.65 // indirect
